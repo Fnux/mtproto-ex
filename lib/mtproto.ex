@@ -1,0 +1,2 @@
+defmodule MTProto do
+end

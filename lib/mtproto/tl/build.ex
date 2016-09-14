@@ -2,15 +2,15 @@ defmodule MTProto.TL.Build do
   alias MTProto.TL
 
   def encode(method, params) do
-     schema = TL.get_methods_schema
+     schema = TL.schema :methods
      description = Enum.filter schema, fn
-          x -> Map.get(x, "method") == method 
+          x -> Map.get(x, "method") == method
         end
      expected_params = description |> List.first |> Map.get("params")
 
      mapped = Enum.map expected_params,fn x ->
           {
-            Map.get(x, "type") |> String.to_atom, 
+            Map.get(x, "type") |> String.to_atom,
             Map.get(params, String.to_atom Map.get(x, "name"))
           }
         end
@@ -63,5 +63,9 @@ defmodule MTProto.TL.Build do
     serialize(:meta8, auth_id_key) <> serialize(:meta8, msg_id)
                                    <> serialize(:meta4, msg_len)
                                    <> data
+  end
+
+  defp wrap(data, encrypted: e) when e == true do
+
   end
 end

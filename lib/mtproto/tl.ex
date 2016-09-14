@@ -51,11 +51,10 @@ defmodule MTProto.TL do
     Build.encode("req_pq", %{nonce: nonce})
   end
 
-  defp get_schema do
+  def schema(sub \\ :constructors) do
     {:ok, json} = File.read @mtproto_schema
     {:ok, schema} = JSON.decode json
-    schema
+    schema[Atom.to_string sub]
   end
 
-  def get_methods_schema, do: get_schema["methods"]
 end

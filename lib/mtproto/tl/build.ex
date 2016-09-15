@@ -41,7 +41,7 @@ defmodule MTProto.TL.Build do
         else
           div = (len + 4) / 4
           padding = 1 - (div - Float.floor div) * 4
-          <<254>> <> <<len::size(3)-unit(8)>> 
+          <<254>> <> <<len::size(3)-unit(8)>>
                   <> <<data>> 
                   <> <<0::size(padding)-unit(8)>>
         end

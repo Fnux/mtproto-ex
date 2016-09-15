@@ -12,54 +12,86 @@ defmodule MTProto.TL.Parse do
       end
 
     expected_params = description |> List.first |> Map.get("params")
-    mapped = deserialize_pack(expected_params, values, %{})
+    mapped = deserialize(expected_params, values, %{})
   end
 
-  def deserialize_pack([arg | tail], values, mapped) do
+  def deserialize([arg | tail], values, mapped) do
      name = Map.get(arg, "name") |> String.to_atom
      type = Map.get(arg, "type") |> String.to_atom
-     {value, len}  = values |> deserialize(type, :len)
+     value = values |> deserialize(type)
      nmap = mapped |> Map.put name, value
+     IO.inspect len(type, values)
+
+     if type == :string || type == :bytes do
+       {_,_,len} = len type, values
+     else
+       len = len type
+     end
+     IO.puts len
      nvalues = :binary.part values, len, byte_size(values) - len
 
-     deserialize_pack tail, nvalues, nmap
+     deserialize tail, nvalues, nmap
   end
 
-  def deserialize_pack([], _, mapped), do: mapped
+  def deserialize([], _, mapped), do: mapped
 
-  def deserialize(data, type, :len)  do
+  def deserialize(data, type)  do
+      len = len(type, data)
       case type do
         :meta4 ->
-          {<<d::little-unsigned-size(4)-unit(8)>>, len} = part data, 4
-          {d, len}
+          <<d::little-unsigned-size(4)-unit(8)>> = part data, len
+          d
         :meta8 ->
-          {<<d::little-signed-size(8)-unit(8)>>, len} = part data, 8
-          {d, len}
+          <<d::little-signed-size(8)-unit(8)>> = part data, len
+          d
         :int128 ->
-          {<<d::signed-little-size(4)-unit(32)>>, len} = part data, 16
-          {d, len}
+          <<d::signed-little-size(4)-unit(32)>> = part data, len
+          d
         :int256 ->
-          {<<d::signed-little-size(8)-unit(32)>>, len} = part data, 32
-          {d, len}
+          <<d::signed-little-size(8)-unit(32)>> = part data, len
+          d
         :long ->
-          {<<d::signed-little-size(2)-unit(64)>>, len} = part data, 32
-          {d, len}
+          <<d::signed-little-size(2)-unit(64)>> = part data, len
+          d
         :double ->
-          {<<d::signed-little-size(2)-unit(64)>>, len} = part data, 32
-          {d, len}
-        :string -> {data, byte_size(data)} # @TODO
-          {data, 0}
-        :bytes -> {data, byte_size(data)}
-          {data, 0}
-         _ -> {data, 0}
+          <<d::signed-little-size(2)-unit(64)>> = part data, len
+          d
+        :string ->
+          {prefix_len, str_len, total_len} = len(:string, data)
+          str = part data, prefix_len, str_len
+          str
+        :bytes -> deserialize(data, :string)
+        :'vector<long>' -> # length 1 only
+          type = :long
+          :binary.part(data, 4+4, len(type)) |> deserialize(type)
+         _ -> data
       end
   end
-  def deserialize(data, type) do
-    {value, _} = deserialize data, type, :len
-    value
+
+  def len(t, value \\ <<>>) do
+    case t do
+      :meta4 -> 4
+      :meta8 -> 8
+      :int -> 4
+      :int128 -> 16
+      :int256 -> 32
+      :long -> 32
+      :double -> 32
+      :string ->
+        <<len::integer-little-size(1)-unit(8)>> = part(value, 1)
+        if len < 254 do
+          div = (1 + len) / 4
+          padding = 1 - (div - Float.floor div) * 4 |> round
+          {1, len, 1+len+padding}
+        else
+          :not_implemented_yet
+        end
+      :bytes -> len(:string, value)
+      _ -> 1
+    end
   end
 
-  defp part(data, start \\ 0, len), do: {:binary.part(data, 0 , len), len}
+  defp part(data, start \\ 0, len), do: :binary.part(data, start , len)
 
   def unwrap(pack) do
     auth_key_id = :binary.part(pack, 0, 8) |> deserialize(:meta8)

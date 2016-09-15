@@ -25,7 +25,7 @@ defmodule MTProto.TCP do
   def unwrap(packet) do
      << len :: little-size(4)-unit(8) >> = :binary.part(packet, 0, 4)
      << seq :: little-size(4)-unit(8) >> = :binary.part(packet, 4, 4)
-     << crc32 :: little-size(4)-unit(8) 
+     << crc32 :: little-size(4)-unit(8)
       >> = :binary.part(packet, byte_size(packet), -4)
 
      data = :binary.part(packet, 2*4, len - 4*3)

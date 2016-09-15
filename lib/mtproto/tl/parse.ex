@@ -37,19 +37,19 @@ defmodule MTProto.TL.Parse do
       len = len(type, data)
       case type do
         :meta4 ->
-          <<d::little-unsigned-size(4)-unit(8)>> = part data, len
+          <<d::little-signed-size(4)-unit(8)>> = part data, len
           d
         :meta8 ->
           <<d::little-signed-size(8)-unit(8)>> = part data, len
           d
         :int128 ->
-          <<d::signed-little-size(4)-unit(32)>> = part data, len
+          <<d::signed-big-size(4)-unit(32)>> = part data, len
           d
         :int256 ->
-          <<d::signed-little-size(8)-unit(32)>> = part data, len
+          <<d::signed-big-size(8)-unit(32)>> = part data, len
           d
         :long ->
-          <<d::signed-little-size(2)-unit(64)>> = part data, len
+          <<d::signed-big-size(2)-unit(64)>> = part data, len
           d
         :double ->
           <<d::signed-little-size(2)-unit(64)>> = part data, len
@@ -59,10 +59,10 @@ defmodule MTProto.TL.Parse do
           str = part data, prefix_len, str_len
           str
         :bytes -> deserialize(data, :string)
-        :'vector<long>' -> # length 1 only
+        :"V4ector<long>" -> # length 1 only
           type = :long
           :binary.part(data, 4+4, len(type)) |> deserialize(type)
-         _ -> data
+        _ -> data
       end
   end
 
@@ -73,8 +73,8 @@ defmodule MTProto.TL.Parse do
       :int -> 4
       :int128 -> 16
       :int256 -> 32
-      :long -> 32
-      :double -> 32
+      :long -> 16
+      :double -> 16
       :string ->
         <<len::integer-little-size(1)-unit(8)>> = part(value, 1)
         if len < 254 do

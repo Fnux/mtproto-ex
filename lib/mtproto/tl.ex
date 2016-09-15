@@ -55,11 +55,9 @@ defmodule MTProto.TL do
     server_public_key_fingerprints: key_fingerprint}) do
     <<intPQ::integer-size(8)-unit(8)>> = pq
     p = Math.decompose_pq intPQ
-    q = intPQ / p |> round |>  Integer.to_string
-    p = p |> Integer.to_string
-    int_key = :binary.decode_unsigned key_fingerprint
-
-    encrypted_data = p_q_inner_data(pq, p , q, nonce, server_nonce)
+    q = intPQ / p |> round
+    int_key = 14101943622620965665
+    encrypted_data = p_q_inner_data(intPQ, p , q, nonce, server_nonce)
 
     Build.payload("req_DH_params", %{nonce: nonce,
                                     server_nonce: server_nonce,
@@ -71,18 +69,22 @@ defmodule MTProto.TL do
 
   def p_q_inner_data(pq, p, q,  nonce, server_nonce) do
     new_nonce = Math.generate_nonce 32
-
-    serialized = Build.encode("p_q_inner_data", %{ pq: pq,
-                                                   p: p,
-                                                   q: q,
-                                                   nonce: nonce,
-                                                   server_nonce: server_nonce,
-                                                   new_nonce: new_nonce
+    serialized = Build.encode("p_q_inner_data", %{ pq: pq,#0x17ED48941A08F981,
+                                                   p: p,#0x494C553B,
+                                                   q: q,#0x53911073,
+                                                   nonce: nonce,#0x3E0549828CCA27E966B301A48FECE2FC,
+                                                   server_nonce: server_nonce,#0xA5CF4D33F4A11EA877BA4AA573907330,
+                                                   new_nonce: new_nonce,#0x311C85DB234AA2640AFC4A76A735CF5B1F0FD68BD17FA181E1229AD867CC024D
                                                   }, :constructors)
+
     data_with_hash = :crypto.hash(:sha, serialized) <> serialized
-    padding = 256 - byte_size(data_with_hash)
+    #IO.inspect :crypto.hash(:sha, serialized)
+    padding = 255 - byte_size(data_with_hash)
     hash256 = data_with_hash <> <<0::size(padding)-unit(8)>>
-    :crypto.public_encrypt :rsa, hash256 , Utils.get_key, :rsa_no_padding
+    #crypted = :crypto.public_encrypt :rsa, hash256 , Utils.get_key, :rsa_no_padding
+    [e, n] = Utils.get_key
+    crypted = :crypto.mod_pow hash256, e, n
+    :binary.decode_unsigned crypted
   end
 
   def schema(sub \\ :constructors) do

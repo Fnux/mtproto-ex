@@ -20,14 +20,12 @@ defmodule MTProto.TL.Parse do
      type = Map.get(arg, "type") |> String.to_atom
      value = values |> deserialize(type)
      nmap = mapped |> Map.put name, value
-     IO.inspect len(type, values)
 
      if type == :string || type == :bytes do
        {_,_,len} = len type, values
      else
        len = len type
      end
-     IO.puts len
      nvalues = :binary.part values, len, byte_size(values) - len
 
      deserialize tail, nvalues, nmap

@@ -1,11 +1,8 @@
 defmodule MTProto.TL.Build do
   alias MTProto.TL
 
-  def encode(method, params) do
-     schema = TL.schema :methods
-     description = Enum.filter schema, fn
-          x -> Map.get(x, "method") == method
-        end
+  def encode(method, params, schema \\ :methods) do
+     description = TL.search schema, method
      expected_params = description |> List.first |> Map.get("params")
 
      mapped = Enum.map expected_params,fn x ->
@@ -21,8 +18,9 @@ defmodule MTProto.TL.Build do
                                                        |> String.to_integer
      serialized_data = serialized_method <> :binary.list_to_bin serialized_values
 
-     serialized_data |> wrap(encrypted: false)
   end
+
+  def payload(method, args), do: encode(method, args) |> wrap(encrypted: false)
 
   def serialize(type, data) do
     case type do

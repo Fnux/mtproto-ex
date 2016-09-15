@@ -48,7 +48,41 @@ defmodule MTProto.TL do
 
   def req_pq do
     nonce = Math.generate_nonce(16)
-    Build.encode("req_pq", %{nonce: nonce})
+    Build.payload("req_pq", %{nonce: nonce})
+  end
+
+  def req_DH_params(%{nonce: nonce, pq: pq, server_nonce: server_nonce,
+    server_public_key_fingerprints: key_fingerprint}) do
+    <<intPQ::integer-size(8)-unit(8)>> = pq
+    p = Math.decompose_pq intPQ
+    q = intPQ / p |> round |>  Integer.to_string
+    p = p |> Integer.to_string
+    int_key = :binary.decode_unsigned key_fingerprint
+
+    encrypted_data = p_q_inner_data(pq, p , q, nonce, server_nonce)
+
+    Build.payload("req_DH_params", %{nonce: nonce,
+                                    server_nonce: server_nonce,
+                                    p: p,
+                                    q: q,
+                                    public_key_fingerprint: int_key,
+                                    encrypted_data: encrypted_data})
+  end
+
+  def p_q_inner_data(pq, p, q,  nonce, server_nonce) do
+    new_nonce = Math.generate_nonce 32
+
+    serialized = Build.encode("p_q_inner_data", %{ pq: pq,
+                                                   p: p,
+                                                   q: q,
+                                                   nonce: nonce,
+                                                   server_nonce: server_nonce,
+                                                   new_nonce: new_nonce
+                                                  }, :constructors)
+    data_with_hash = :crypto.hash(:sha, serialized) <> serialized
+    padding = 256 - byte_size(data_with_hash)
+    hash256 = data_with_hash <> <<0::size(padding)-unit(8)>>
+    :crypto.public_encrypt :rsa, hash256 , Utils.get_key, :rsa_no_padding
   end
 
   def schema(sub \\ :constructors) do
@@ -57,4 +91,18 @@ defmodule MTProto.TL do
     schema[Atom.to_string sub]
   end
 
+  def search(type, name) do
+    schema = schema(type)
+    field =
+      case type do
+        :methods -> "method"
+        :constructors -> "predicate"
+      end
+
+    description = Enum.filter schema, fn
+          x -> Map.get(x, field) == name
+    end
+
+    description
+  end
 end

@@ -10,10 +10,11 @@ defmodule MTProto do
     {_, socket} = TCP.connect @server, @port
     TL.req_pq |> TCP.wrap |> TCP.send(socket)
     {_, packet} = TCP.recv(socket)
-    packet |> :binary.list_to_bin
-           |> TCP.unwrap
-           |> TL.Parse.decode
-#
+    resPQ = packet |> :binary.list_to_bin
+                   |> TCP.unwrap
+                   |> TL.Parse.decode
+
+    TL.req_DH_params(resPQ)
 #    # 0x05162463
 #    {nonce, server_nonce, pq, fingerprint} = values |> TL.res_pq
 #

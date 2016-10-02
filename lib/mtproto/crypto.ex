@@ -1,4 +1,6 @@
 defmodule MTProto.Crypto do
+  alias MTProto.TL.Build
+
   @key "priv/public.key"
 
   # Get the components of the server's public key
@@ -12,8 +14,8 @@ defmodule MTProto.Crypto do
   # Build kyes for decrypting/encrypting AES256 IGE (makeAuthKey)
   def build_tmp_aes(server_nonce, new_nonce) do
     # From int to bits
-    server_nonce = server_nonce |> :binary.encode_unsigned
-    new_nonce = new_nonce |> :binary.encode_unsigned
+    server_nonce = server_nonce |> Build.encode_signed
+    new_nonce = new_nonce |> Build.encode_signed
 
     # tmp_aes_key := SHA1(new_nonce + server_nonce) 
     # + substr (SHA1(server_nonce + new_nonce), 0, 12);

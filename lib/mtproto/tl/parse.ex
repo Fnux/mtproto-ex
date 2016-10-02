@@ -1,11 +1,15 @@
 defmodule MTProto.TL.Parse do
   alias MTProto.TL
 
-  def decode(data, wrapped \\ true) do
-    if wrapped, do: data = data |> unwrap
+  # Parse and deserialize a payload given the constructor
+  def decode(data, wrapped \\ :wrapped) do
+    if wrapped == :wrapped, do: data = data |> unwrap
+
+    # Extract constructor and values
     constructor = Map.get data, :constructor
     values = Map.get data, :values
 
+    # Get the structure of the payload
     schema = TL.schema :constructors
     description = Enum.filter schema, fn
            x -> Map.get(x, "id") |> String.to_integer == constructor
@@ -13,104 +17,89 @@ defmodule MTProto.TL.Parse do
 
     expected_params = description |> List.first |> Map.get("params")
 
-    mapped = deserialize(expected_params, values, %{})
-    mapped |> Map.put :predicate, description |> List.first |> Map.get "predicate"
+    # Map & deserialize given the structure
+    map = deserialize(expected_params, values, %{})
+
+    # Add the predicate's name to the output, kinda useful
+    map |> Map.put :predicate, description |> List.first |> Map.get "predicate"
   end
 
-  def deserialize([arg | tail], values, mapped) do
-     name = Map.get(arg, "name") |> String.to_atom
-     type = Map.get(arg, "type") |> String.to_atom
+  # Map and deserialize the values given the structure
+  def deserialize([struct | tail], values, map) do
+     # Get the name and the type of the value from the structure
+     name = Map.get(struct, "name") |> String.to_atom
+     type = Map.get(struct, "type") |> String.to_atom
 
-     value = values |> deserialize(type)
-     nmap = mapped |> Map.put name, value
+     # Deserialize and map
+     {value, reduced_values} = values |> deserialize_from_stream(type)
+     extended_map = map |> Map.put name, value
 
-     if type == :string || type == :bytes do
-       {_,_,len} = len type, values
-     else
-       len = len type
-     end
-
-     nvalues = :binary.part values, len, byte_size(values) - len
-
-     deserialize tail, nvalues, nmap
+     # Iterate on the next elements
+     deserialize tail, reduced_values, extended_map
   end
 
-  def deserialize([], _, mapped), do: mapped
+  # Returns the map once everything was processed
+  def deserialize([], _, map), do: map
 
-  def deserialize(data, type)  do
-      len = len(type, data)
+
+  # Deserialize given the type and the value
+  def deserialize(value, type) do
+    {value, _} = deserialize_from_stream value, type
+    value
+  end
+
+  # Deserialize given the type and a list of values (~)
+  def deserialize_from_stream(values, type)  do
       case type do
         :meta4 ->
-          <<d::little-signed-size(4)-unit(8)>> = part data, len
-          d
+          {head, tail} = split values, 4
+          <<value::little-signed-size(4)-unit(8)>> = head
+          {value, tail}
         :meta8 ->
-          <<d::little-signed-size(8)-unit(8)>> = part data, len
-          d
+          {head, tail} = split values, 8
+          <<value::little-signed-size(8)-unit(8)>> = head
+          {value, tail}
+        :int ->
+          {head, tail} = split values, 4
+          <<value::signed-big-size(1)-unit(32)>> = head
+          {value, tail}
         :int128 ->
-          <<d::signed-big-size(4)-unit(32)>> = part data, len
-          d
+          {head, tail} = split values, 16
+          <<value::signed-big-size(4)-unit(32)>> = head
+          {value, tail}
         :int256 ->
-          <<d::signed-big-size(8)-unit(32)>> = part data, len
-          d
+          {head, tail} = split values, 32
+          <<value::signed-big-size(8)-unit(32)>> = head
+          {value, tail}
         :long ->
-          <<d::signed-big-size(2)-unit(64)>> = part data, len
-          d
+          {head, tail} = split values, 16
+          <<value::signed-big-size(2)-unit(64)>> = head
+          {value, tail}
         :double ->
-          <<d::signed-little-size(2)-unit(64)>> = part data, len
-          d
+          {head, tail} = split values, 16
+          <<value::signed-little-size(2)-unit(64)>> = head
+          {value, tail}
         :string ->
-          {prefix_len, str_len, total_len} = len(:string, data)
-          str = part data, prefix_len, str_len
-          str
-        :bytes -> deserialize(data, :string)
-        :"V4ector<long>" -> # length 1 only
+          {prefix_length, str_length, total_length} = string_length(values)
+          serialized_string = :binary.part values, prefix_length, str_length
+          tail = :binary.part values, total_length, byte_size(values) - total_length
+
+          string = serialized_string #! (?)
+          {string, tail}
+        :bytes -> deserialize_from_stream(values, :string)
+        :"V4ector<long>" -> # length 1 only, some ugly hotfix
           type = :long
-          :binary.part(data, 4+4, len(type)) |> deserialize(type)
-        _ -> data
+          :binary.part(values, 4+4, 16) |> deserialize_from_stream(type)
+        _ -> {values, ""}
       end
   end
 
-  def len(t, value \\ <<>>) do
-    case t do
-      :meta4 -> 4
-      :meta8 -> 8
-      :int -> 4
-      :int128 -> 16
-      :int256 -> 32
-      :long -> 16
-      :double -> 16
-      :string ->
-        p = fn x ->
-          y = (x - Float.floor x)
-          case y do
-            0.0 -> 0
-            _ -> (1-y) * 4 |> round
-          end
-        end
-
-        <<len::integer-little-size(1)-unit(8)>> = part(value, 1)
-        if len < 254 do
-          div = (1 + len) / 4
-          padding = p.(div)
-          {1, len, 1+len+padding}
-        else
-          <<str_len::little-size(3)-unit(8)>> = :binary.part value ,1 ,3
-          div = (4 + str_len) / 4
-          padding = p.(div)
-          {4, str_len, 4 + str_len + padding }
-        end
-      :bytes -> len(:string, value)
-      _ -> 1
-    end
-  end
-
-  defp part(data, start \\ 0, len), do: :binary.part(data, start, len)
-
-  def unwrap(pack) do
-    auth_key_id = :binary.part(pack, 0, 8) |> deserialize(:meta8)
-    msg_id = :binary.part(pack, 8, 8) |> deserialize(:meta8)
-    msg_len = :binary.part(pack, 16, 4) |> deserialize(:meta4)
-    msg = :binary.part(pack, 20, msg_len)
+  # Unwrap
+  def unwrap(data) do
+    auth_key_id = :binary.part(data, 0, 8) |> deserialize(:meta8)
+    msg_id = :binary.part(data, 8, 8) |> deserialize(:meta8)
+    msg_len = :binary.part(data, 16, 4) |> deserialize(:meta4)
+    msg = :binary.part(data, 20, msg_len)
 
     constructor = :binary.part(msg, 0, 4) |> deserialize(:meta4)
     values = :binary.part(msg, 4, msg_len - 4)
@@ -122,5 +111,44 @@ defmodule MTProto.TL.Parse do
       constructor: constructor,
       values: values
      }
+  end
+
+  # Compute the prefix, content and total (including prefix and padding) length
+  # of a serialized string
+  # See : https://core.telegram.org/mtproto/serialize#base-types
+  def string_length(data) do
+    p = fn x ->
+      y = (x - Float.floor x)
+      case y do
+        0.0 -> 0
+        _ -> (1-y) * 4 |> round
+      end
+    end
+
+    <<len::integer-little-size(1)-unit(8)>> = :binary.part data,0, 1
+    if len < 254 do
+      div = (1 + len) / 4
+      padding = p.(div)
+      {1, len, 1+len+padding}
+    else
+      <<str_len::little-size(3)-unit(8)>> = :binary.part data ,1 ,3
+      div = (4 + str_len) / 4
+      padding = p.(div)
+      {4, str_len, 4 + str_len + padding }
+    end
+  end
+
+  # Split a binary at p bytes
+  def split(value, p) do
+    left = :binary.part value, 0, p
+    right = :binary.part value, p, byte_size(value) - p
+    {left, right}
+  end
+
+  # Decode a signed integer
+  def decode_signed(bin) do
+    len = byte_size bin
+    <<int::signed-size(len)-unit(8)>> = bin
+    int
   end
 end

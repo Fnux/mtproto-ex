@@ -101,7 +101,7 @@ defmodule MTProto.TL do
     map = %{constructor: constructor, values: values}
 
     # Parse & deserialize
-    map |> MTProto.TL.Parse.decode(false)
+    map |> MTProto.TL.Parse.decode(:non_wrapped)
   end
 
   # Build set_client_DH_params payload

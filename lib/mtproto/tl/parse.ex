@@ -1,10 +1,10 @@
 defmodule MTProto.TL.Parse do
   alias MTProto.TL
 
-  def decode(pack) do
-    unwrapped = pack |> unwrap
-    constructor = Map.get unwrapped, :constructor
-    values = Map.get unwrapped, :values
+  def decode(data, wrapped \\ true) do
+    if wrapped, do: data = data |> unwrap
+    constructor = Map.get data, :constructor
+    values = Map.get data, :values
 
     schema = TL.schema :constructors
     description = Enum.filter schema, fn
@@ -12,12 +12,15 @@ defmodule MTProto.TL.Parse do
       end
 
     expected_params = description |> List.first |> Map.get("params")
+
     mapped = deserialize(expected_params, values, %{})
+    mapped |> Map.put :predicate, description |> List.first |> Map.get "predicate"
   end
 
   def deserialize([arg | tail], values, mapped) do
      name = Map.get(arg, "name") |> String.to_atom
      type = Map.get(arg, "type") |> String.to_atom
+
      value = values |> deserialize(type)
      nmap = mapped |> Map.put name, value
 
@@ -26,6 +29,7 @@ defmodule MTProto.TL.Parse do
      else
        len = len type
      end
+
      nvalues = :binary.part values, len, byte_size(values) - len
 
      deserialize tail, nvalues, nmap
@@ -76,20 +80,31 @@ defmodule MTProto.TL.Parse do
       :long -> 16
       :double -> 16
       :string ->
+        p = fn x ->
+          y = (x - Float.floor x)
+          case y do
+            0.0 -> 0
+            _ -> (1-y) * 4 |> round
+          end
+        end
+
         <<len::integer-little-size(1)-unit(8)>> = part(value, 1)
         if len < 254 do
           div = (1 + len) / 4
-          padding = 1 - (div - Float.floor div) * 4 |> round
+          padding = p.(div)
           {1, len, 1+len+padding}
         else
-          :not_implemented_yet
+          <<str_len::little-size(3)-unit(8)>> = :binary.part value ,1 ,3
+          div = (4 + str_len) / 4
+          padding = p.(div)
+          {4, str_len, 4 + str_len + padding }
         end
       :bytes -> len(:string, value)
       _ -> 1
     end
   end
 
-  defp part(data, start \\ 0, len), do: :binary.part(data, start , len)
+  defp part(data, start \\ 0, len), do: :binary.part(data, start, len)
 
   def unwrap(pack) do
     auth_key_id = :binary.part(pack, 0, 8) |> deserialize(:meta8)

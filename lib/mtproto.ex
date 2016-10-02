@@ -6,7 +6,7 @@ defmodule MTProto do
   @server "149.154.167.40"
   @port 443
 
-  def init do
+  def makeAuthKey do
     {_, socket} = TCP.connect @server, @port
     TL.req_pq |> TCP.wrap |> TCP.send(socket)
     {_, packet} = TCP.recv(socket)
@@ -14,12 +14,21 @@ defmodule MTProto do
                    |> TCP.unwrap
                    |> TL.Parse.decode
 
-    TL.req_DH_params(resPQ) |> TCP.wrap(1) |> TCP.send(socket)
+    {req_DH_payload, new_nonce} = TL.req_DH_params(resPQ)
+    req_DH_payload |> TCP.wrap(1) |> TCP.send(socket)
     {_, packet} = TCP.recv(socket)
 
-    #server_DH_params = packet |> :binary.list_to_bin
-    #                          |> TCP.unwrap
-    #                          |> TL.Parse.decode
+    %{predicate: req_DH,
+      encrypted_answer: encrypted_answer,
+      server_nonce: server_nonce} =
+                       packet |> :binary.list_to_bin
+                              |> TCP.unwrap
+                              |> TL.Parse.decode
 
+    if req_DH == "server_DH_params_fail" do
+      raise :server_DH_params_fail
+    end
+
+    TL.server_DH_params_ok encrypted_answer, server_nonce, new_nonce
   end
 end

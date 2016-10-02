@@ -29,4 +29,35 @@ defmodule MTProto.Crypto do
 
     {tmp_aes_key, tmp_aes_iv}
   end
+
+  # Generate a random number of lenth n
+  def generate_rand(n) do
+    :math.pow(10, n) - 1 |> round |> :rand.uniform
+  end
+
+  # Compute GCD
+  def gcd(a,0), do: abs(a)
+  def gcd(a,b), do: gcd(b, rem(a,b))
+
+  # Decompose PQ (Pollard's rho algorithm)
+  def decompose_pq(n) do
+    x = :rand.uniform(n-1)
+    y = x
+    c = :rand.uniform(n-1)
+    g = 1
+
+    decompose_pq(x,y,g,c,n)
+  end
+
+  defp decompose_pq(x,y,g,c,n) when g == 1 do
+    f = fn(e) -> (rem(e*e,n) + c) |> rem(n) end
+
+    x = f.(x)
+    y = f.(f.(y))
+    g = abs(x-y) |> gcd(n)
+
+    decompose_pq(x,y,g,c,n)
+  end
+
+  defp decompose_pq(_,_,g,_,_), do: g
 end

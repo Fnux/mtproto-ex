@@ -48,7 +48,7 @@ defmodule MTProto do
     } = resPQ
 
     # req_DH_params
-    new_nonce = MTProto.Math.generate_nonce 32
+    new_nonce = MTProto.Crypto.generate_rand 32
     req_DH_params = TL.req_DH_params(nonce, server_nonce, new_nonce, pq, key_fingerprint)
     req_DH_params |> TCP.wrap(1) |> TCP.send(socket)
 

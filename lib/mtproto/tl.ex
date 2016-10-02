@@ -1,5 +1,4 @@
 defmodule MTProto.TL do
-  alias MTProto.Math
   alias MTProto.Crypto
   alias MTProto.TL.Parse
   alias MTProto.TL.Build
@@ -35,14 +34,14 @@ defmodule MTProto.TL do
 
   # Build the payload for req_pq
   def req_pq do
-    nonce = Math.generate_nonce(16)
+    nonce = Crypto.generate_rand(16)
     Build.payload("req_pq", %{nonce: nonce})
   end
 
   # Build the payload for req_DH_params
   def req_DH_params(nonce, server_nonce, new_nonce, pq, key_fingerprint) do
     <<pq::integer-size(8)-unit(8)>> = pq # from bits to integer
-    p = Math.decompose_pq pq
+    p = Crypto.decompose_pq pq
     q = pq / p |> round
     key_fingerprint = 14101943622620965665 #! Should deal with the parameter!
 
@@ -119,7 +118,7 @@ defmodule MTProto.TL do
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
   defp client_DH_inner_data(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
-    b = Math.generate_nonce 256 # random number
+    b = Crypto.generate_rand 256 # random number
     g_b = :crypto.mod_pow g, b, dh_prime # g^b % dh_prime
 
     data = Build.encode("client_DH_inner_data",

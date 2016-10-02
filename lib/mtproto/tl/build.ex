@@ -36,7 +36,11 @@ defmodule MTProto.TL.Build do
       :meta4 -> <<data::little-signed-size(4)-unit(8)>>
       :meta8 -> <<data::little-signed-size(8)-unit(8)>>
       :bytes ->
-        bin = :binary.encode_unsigned data
+        if (is_binary data) do
+          bin = data
+        else
+          bin = :binary.encode_unsigned data
+        end
         len = byte_size bin
         pack(bin, len)
     end

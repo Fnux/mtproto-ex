@@ -68,17 +68,23 @@ defmodule MTProto do
     {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, new_nonce)
 
     ## Decrypt & parse server_DH_params_ok
-    server_DH_params_ok = TL.server_DH_params_ok encrypted_answer, tmp_aes_key, tmp_aes_iv
+    server_DH_params_ok = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
 
     %{dh_prime: dh_prime,
-      g: g,
+      g: g, # g is always equal to 2, 3, 4, 5, 6 or 7
       g_a: g_a,
       nonce: nonce,
-      server_nonce: server_nonce,
+      server_nonce: server_nonce2,
       server_time: server_time,
     } = server_DH_params_ok
 
-    # set_client_DH_params (does not work yet)
-    #TL.set_client_DH_params(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv)
+    # set_client_DH_params
+    TL.set_client_DH_params(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) |> TCP.wrap(2) |> TCP.send(socket)
+
+    # dh_gen_ok/retry/fail
+    {_, wrapped_dh_gen} = TCP.recv(socket)
+
+    dh_gen = wrapped_dh_gen |> :binary.list_to_bin
+                            #|> TCP.unwrap
   end
 end

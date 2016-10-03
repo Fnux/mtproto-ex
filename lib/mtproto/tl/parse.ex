@@ -2,7 +2,7 @@ defmodule MTProto.TL.Parse do
   alias MTProto.TL
 
   # Parse and deserialize a payload given the constructor
-  def decode(data, wrapped \\ :wrapped) do
+  def decode(data, wrapped \\ :wrapped, struct \\ :constructors) do
     if wrapped == :wrapped, do: data = data |> unwrap
 
     # Extract constructor and values
@@ -10,7 +10,7 @@ defmodule MTProto.TL.Parse do
     values = Map.get data, :values
 
     # Get the structure of the payload
-    schema = TL.schema :constructors
+    schema = TL.schema struct
     description = Enum.filter schema, fn
            x -> Map.get(x, "id") |> String.to_integer == constructor
       end
@@ -61,7 +61,7 @@ defmodule MTProto.TL.Parse do
           {value, tail}
         :int ->
           {head, tail} = split values, 4
-          <<value::signed-big-size(1)-unit(32)>> = head
+          <<value::unsigned-size(4)-little-unit(8)>> = head
           {value, tail}
         :int128 ->
           {head, tail} = split values, 16
@@ -72,12 +72,12 @@ defmodule MTProto.TL.Parse do
           <<value::signed-big-size(8)-unit(32)>> = head
           {value, tail}
         :long ->
-          {head, tail} = split values, 16
-          <<value::signed-big-size(2)-unit(64)>> = head
+          {head, tail} = split values, 8
+          <<value::signed-big-size(2)-unit(32)>> = head
           {value, tail}
         :double ->
-          {head, tail} = split values, 16
-          <<value::signed-little-size(2)-unit(64)>> = head
+          {head, tail} = split values, 8
+          <<value::signed-little-size(2)-unit(32)>> = head
           {value, tail}
         :string ->
           {prefix_length, str_length, total_length} = string_length(values)
@@ -125,7 +125,7 @@ defmodule MTProto.TL.Parse do
       end
     end
 
-    <<len::integer-little-size(1)-unit(8)>> = :binary.part data,0, 1
+    <<len::size(1)-unit(8)>> = :binary.part data,0, 1
     if len < 254 do
       div = (1 + len) / 4
       padding = p.(div)

@@ -43,7 +43,7 @@ defmodule MTProto.TL do
     <<pq::integer-size(8)-unit(8)>> = pq # from bits to integer
     p = Crypto.decompose_pq pq
     q = pq / p |> round
-    key_fingerprint = 14101943622620965665 #! Should deal with the parameter!
+    key_fingerprint = 14101943622620965665 #key_fingerprint |> Parse.decode_signed
 
     # Build & encryp p_q_inner_data
     encrypted_data = p_q_inner_data(nonce, server_nonce, new_nonce, pq, p , q)
@@ -83,7 +83,7 @@ defmodule MTProto.TL do
   end
 
   # Decrypt and parse the server_DH_params_ok payload
-  def server_DH_params_ok(encrypted_answer, tmp_aes_key, tmp_aes_iv) do
+  def server_DH_inner_data(encrypted_answer, tmp_aes_key, tmp_aes_iv) do
     # answer_with_hash := SHA1(answer) + answer + (0-15 random bytes); 
     # such that the length be divisible by 16;
     # Encrypted with AES_256_IGE;
@@ -105,7 +105,7 @@ defmodule MTProto.TL do
   end
 
   # Build set_client_DH_params payload
-  def set_client_DH_params(nonce, server_nonce, new_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
+  def set_client_DH_params(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
     # Build & encrypt client_DH_inner_data
     encrypted_data = client_DH_inner_data nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv
 
@@ -120,7 +120,6 @@ defmodule MTProto.TL do
   defp client_DH_inner_data(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
     b = Crypto.generate_rand 256 # random number
     g_b = :crypto.mod_pow g, b, dh_prime # g^b % dh_prime
-
     data = Build.encode("client_DH_inner_data",
                         %{
                           nonce: nonce,
@@ -133,7 +132,16 @@ defmodule MTProto.TL do
 
     # data_with_hash := SHA1(data) + data + (0-15 random bytes); such that length be divisible by 16;
     data = :crypto.hash(:sha, data) <> data
-    padding = 255 - byte_size(data)
+    ## Compute padding
+    x =  byte_size(data) / 16
+    y = x - Float.floor(x)
+    padding =
+      if y == 0.0 do
+        0
+      else
+        (1-y) * 16 |> round
+      end
+    ## Build data_with_hash
     data_with_hash = data <> <<0::size(padding)-unit(8)>>
 
     # Encrypt with AES256 IGE

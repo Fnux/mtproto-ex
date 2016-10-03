@@ -42,7 +42,7 @@ defmodule MTProto.TCP do
      # as the error code.
      if byte_size(payload) == 4 do
        <<error::signed-little-size(4)-unit(8)>> = payload
-       raise "Received error #{error} from the server."
+       raise "Received error #{error} on sequence #{seq} from the server."
      end
 
      payload

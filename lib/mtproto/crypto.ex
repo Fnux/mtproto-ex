@@ -20,12 +20,11 @@ defmodule MTProto.Crypto do
     # tmp_aes_key := SHA1(new_nonce + server_nonce) 
     # + substr (SHA1(server_nonce + new_nonce), 0, 12);
     tmp_aes_key = :crypto.hash(:sha, new_nonce <> server_nonce)
-                  <> (:crypto.hash(:sha, server_nonce <> new_nonce)
-                  |> :binary.part(0, 12))
+                  <> :binary.part :crypto.hash(:sha, server_nonce <> new_nonce), 0, 12
 
     # tmp_aes_iv := substr (SHA1(server_nonce + new_nonce), 12, 8)
     # + SHA1(new_nonce + new_nonce) + substr (new_nonce, 0, 4);
-    tmp_aes_iv = (:crypto.hash(:sha, server_nonce <> new_nonce) |> :binary.part(12,8))
+    tmp_aes_iv = :binary.part(:crypto.hash(:sha, server_nonce <> new_nonce), 12, 8)
                  <> :crypto.hash(:sha, new_nonce <> new_nonce)
                  <> :binary.part(new_nonce, 0, 4)
 

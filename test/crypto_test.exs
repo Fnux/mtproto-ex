@@ -1,16 +1,25 @@
 defmodule CryptoTest do
   alias MTProto.TL.Build
+  alias MTProto.TL.Parse
   use ExUnit.Case
   doctest MTProto
 
-  test "build_tmp_aes" do
+  @data "test/makeauthkey_test.json"
+
+  setup_all do
+    {:ok, json} = File.read @data
+    {:ok, data} = JSON.decode json
+    data
+  end
+
+  test "build_tmp_aes", data do
     # Given
-    server_nonce = 0xA5CF4D33F4A11EA877BA4AA573907330
-    new_nonce = 0x311C85DB234AA2640AFC4A76A735CF5B1F0FD68BD17FA181E1229AD867CC024D
+    server_nonce = data["server_nonce"] |> hexStr2Int
+    new_nonce = data["new_nonce"] |> hexStr2Int
 
     # Expected
-    expected_tmp_aes_key = 0xF011280887C7BB01DF0FC4E17830E0B91FBB8BE4B2267CB985AE25F33B527253 |> Build.encode_signed
-    expected_tmp_aes_iv = 0x3212D579EE35452ED23E0D0C92841AA7D31B2E9BDEF2151E80D15860311C85DB |> Build.encode_signed
+    expected_tmp_aes_key = data["crypto"]["tmp_aes_key"] |> hexStr2Bytes
+    expected_tmp_aes_iv =  data["crypto"]["tmp_aes_iv"] |> hexStr2Bytes
 
     # Compute
     {tmp_aes_key, tmp_aes_iv} = MTProto.Crypto.build_tmp_aes(server_nonce, new_nonce)
@@ -26,5 +35,9 @@ defmodule CryptoTest do
 
   def hexStr2Bytes(hexStr) do
     Base.decode16!(hexStr, case: :mixed)
+  end
+
+  def hexStr2Int(hexStr) do
+    hexStr |> hexStr2Bytes |> Parse.decode_signed
   end
 end

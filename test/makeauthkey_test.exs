@@ -21,11 +21,13 @@ defmodule MakeAuthKeyTest do
     expected_nonce = data["nonce"] |> hexStr2Int
     expected_pq  = data["pq"] |> hexStr2Bytes
     expected_server_nonce = data["server_nonce"] |> hexStr2Int
+    expected_pkey_fingerprint = data["server_public_key_fingerprint"] |> hexStr2Int
 
     # Decode
     %{
       nonce: nonce,
       pq: pq,
+      server_public_key_fingerprints: pkey_fingerprint,
       server_nonce: server_nonce
     } =  Parse.decode resPQ
 
@@ -33,27 +35,28 @@ defmodule MakeAuthKeyTest do
     assert nonce == expected_nonce
     assert pq == expected_pq
     assert server_nonce == expected_server_nonce
+    assert pkey_fingerprint == expected_pkey_fingerprint
   end
 
-#  Cannot be tested since encrypted with "random bytes" for padding...
-#  test "p_q_inner_data", data do
-#    # Expected
-#    expected_encrypted_data = data["p_q_inner_data"] |> hexStr2Bytes
-#
-#    # Required values
-#    nonce = data["nonce"] |> hexStr2Int
-#    server_nonce = data["server_nonce"] |> hexStr2Int
-#    new_nonce = data["new_nonce"] |> hexStr2Int
-#    pq = data["pq"] |> hexStr2Bytes
-#    p = data["p"] |> hexStr2Bytes
-#    q = data["q"] |> hexStr2Bytes
-#
-#    # Compute
-#    encrypted_data = TL.p_q_inner_data nonce, server_nonce, new_nonce, pq, p, q
-#
-#    # Assert
-#    assert encrypted_data == expected_encrypted_data
-#  end
+  test "p_q_inner_data", data do
+    # Expected
+    # expected_encrypted_data = data["p_q_inner_data"] |> hexStr2Bytes
+    expected_hash = data["p_q_inner_data_sha1"] |> hexStr2Bytes
+
+    # Required values
+    nonce = data["nonce"] |> hexStr2Int
+    server_nonce = data["server_nonce"] |> hexStr2Int
+    new_nonce = data["new_nonce"] |> hexStr2Int
+    pq = data["pq"] |> hexStr2Bytes
+    p = data["p"] |> hexStr2Bytes
+    q = data["q"] |> hexStr2Bytes
+
+    # Compute
+    {hash, data_with_hash} = TL.p_q_inner_data nonce, server_nonce, new_nonce, pq, p, q
+
+    # Assert
+    assert hash == expected_hash
+  end
 
   test "server_DH_params", data do
     # Get example data

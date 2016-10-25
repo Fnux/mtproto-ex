@@ -6,4 +6,5 @@ Well, it's still far from completed.
 
 ## Actual state
 
+* Able to compute an Authorization key
 * Won't have a lot of time during this semester (Fall 2016).

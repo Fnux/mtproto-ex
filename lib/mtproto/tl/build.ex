@@ -2,7 +2,7 @@ defmodule MTProto.TL.Build do
   alias MTProto.TL
 
   # Build a payload given a constructor and argumentd
-  def payload(method, args), do: encode(method, args) |> wrap(encrypted: false)
+  def payload(method, args), do: encode(method, args) |> wrap_plain
 
   # Encode & Serialize
   def encode(method, params, schema \\ :methods) do
@@ -75,7 +75,7 @@ defmodule MTProto.TL.Build do
   end
 
   # Wrap the data as an unencrypted MTProto message
-  defp wrap(data, encrypted: e) when e == false  do
+  defp wrap_plain(data)  do
     auth_id_key = 0
     msg_id = generate_id
     msg_len = byte_size(data)
@@ -85,7 +85,7 @@ defmodule MTProto.TL.Build do
   end
 
   # Wrap the data as an encrypted MTProto message
-  defp wrap(data, encrypted: e) when e == true do
+  defp wrap_encrypted do
     :not_yet_implemented
   end
 

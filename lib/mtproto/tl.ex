@@ -34,7 +34,7 @@ defmodule MTProto.TL do
 
   # Build the payload for req_pq
   def req_pq do
-    nonce = Crypto.generate_rand(16)
+    nonce = Crypto.rand_bytes(16)
     Build.payload("req_pq", %{nonce: nonce})
   end
 
@@ -43,17 +43,25 @@ defmodule MTProto.TL do
     <<pq::integer-size(8)-unit(8)>> = pq # from bits to integer
     p = Crypto.decompose_pq pq
     q = pq / p |> round
-    key_fingerprint = 14101943622620965665 #key_fingerprint |> Parse.decode_signed
+    f = key_fingerprint
 
     # Build & encryp p_q_inner_data
-    encrypted_data = p_q_inner_data(nonce, server_nonce, new_nonce, pq, p , q)
+    {_,data_with_hash} = p_q_inner_data(nonce, server_nonce, new_nonce, pq, p , q)
+
+    # encrypted_data := RSA (data_with_hash, server_public_key); a 255-byte long number (big endian)
+    # is raised to the requisite power over the requisite modulus, and the result is stored as a
+    # 256-byte number.
+    {e, n} = Crypto.get_key # get RSA public key components, @TODO : check with given fingerprint
+    #encrypted_data = :crypto.public_encrypt :rsa, data_with_hash, [e,n], :rsa_no_padding
+    encrypted_data = :crypto.mod_pow data_with_hash, e, n
+
 
     # Build req_DH_params payload
     payload = Build.payload("req_DH_params", %{nonce: nonce,
                                     server_nonce: server_nonce,
                                     p: p,
                                     q: q,
-                                    public_key_fingerprint: key_fingerprint,
+                                    public_key_fingerprint: f,
                                     encrypted_data: encrypted_data})
   end
 
@@ -71,15 +79,13 @@ defmodule MTProto.TL do
                           :constructors
                         )
     # data_with_hash := SHA1(data) + data + (any random bytes); such that the length equal 255 bytes;
-    data = :crypto.hash(:sha, data) <> data
+    #IO.inspect data |> :binary.bin_to_list |> Enum.map fn(x) -> IO.write Integer.to_char_list(x, 16) end
+    #IO.inspect byte_size data
+    hash = :crypto.hash(:sha, data)
+    data = <<hash::binary, data::binary>>
     padding = 255 - byte_size(data)
-    data_with_hash = data <> <<0::size(padding)-unit(8)>>
-
-    # encrypted_data := RSA (data_with_hash, server_public_key); a 255-byte long number (big endian)
-    # is raised to the requisite power over the requisite modulus, and the result is stored as a
-    # 256-byte number.
-    {e, n} = Crypto.get_key # get RSA public key components
-    encrypted_data = :crypto.mod_pow data_with_hash, e, n # data_with_hash^e % n
+    data_with_hash = <<data::binary, :crypto.strong_rand_bytes(padding)::binary>>
+    {hash, data_with_hash}
   end
 
   # Decrypt and parse the server_DH_params_ok payload
@@ -118,7 +124,7 @@ defmodule MTProto.TL do
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
   defp client_DH_inner_data(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
-    b = Crypto.generate_rand 256 # random number
+    b = Crypto.rand_bytes(32) # random number
     g_b = :crypto.mod_pow g, b, dh_prime # g^b % dh_prime
     data = Build.encode("client_DH_inner_data",
                         %{

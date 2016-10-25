@@ -1,5 +1,6 @@
 defmodule MTProto.Crypto do
   alias MTProto.TL.Build
+  alias MTProto.TL.Parse
 
   @key "priv/public.key"
 
@@ -31,9 +32,9 @@ defmodule MTProto.Crypto do
     {tmp_aes_key, tmp_aes_iv}
   end
 
-  # Generate a random number of lenth n
-  def generate_rand(n) do
-    :math.pow(10, n) - 1 |> round |> :rand.uniform
+  # Generate rand number
+  def rand_bytes(n) do
+    :crypto.strong_rand_bytes(n) |> Parse.decode_signed
   end
 
   # Compute GCD

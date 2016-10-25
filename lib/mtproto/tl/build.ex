@@ -20,6 +20,7 @@ defmodule MTProto.TL.Build do
 
      # Serialized values
      serialized_values = map |> Enum.map fn {type, value} -> serialize(value, type) end
+
      # Seralize the constructor
      serialized_method = description |> List.first
                                      |> Map.get("id")
@@ -33,10 +34,10 @@ defmodule MTProto.TL.Build do
   # Serialize a value given its type
   def serialize(data, type) do
     case type do
-      :int -> <<data::signed-size(1)-unit(32)>>
-      :int128 -> <<data::signed-big-size(4)-unit(32)>>
-      :int256 -> <<data::signed-big-size(8)-unit(32)>>
-      :long -> <<data::signed-little-size(2)-unit(32)>>
+      :int -> <<data::signed-little-size(1)-unit(32)>>
+      :int128 -> <<data::signed-big-size(16)-unit(8)>>
+      :int256 -> <<data::signed-big-size(32)-unit(8)>>
+      :long -> <<data::unsigned-little-size(8)-unit(8)>>
       :double -> <<data::signed-little-size(2)-unit(32)>>
       :string -> serialize_string(data)
       :head4 -> <<data::little-signed-size(4)-unit(8)>>

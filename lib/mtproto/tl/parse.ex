@@ -61,19 +61,19 @@ defmodule MTProto.TL.Parse do
           {value, tail}
         :int ->
           {head, tail} = split values, 4
-          <<value::unsigned-size(4)-little-unit(8)>> = head
+          <<value::signed-size(4)-little-unit(8)>> = head
           {value, tail}
         :int128 ->
           {head, tail} = split values, 16
-          <<value::signed-big-size(4)-unit(32)>> = head
+          <<value::signed-big-size(16)-unit(8)>> = head
           {value, tail}
         :int256 ->
           {head, tail} = split values, 32
-          <<value::signed-big-size(8)-unit(32)>> = head
+          <<value::signed-big-size(16)-unit(8)>> = head
           {value, tail}
         :long ->
           {head, tail} = split values, 8
-          <<value::signed-big-size(2)-unit(32)>> = head
+          <<value::signed-little-size(8)-unit(8)>> = head
           {value, tail}
         :double ->
           {head, tail} = split values, 8
@@ -84,12 +84,12 @@ defmodule MTProto.TL.Parse do
           serialized_string = :binary.part values, prefix_length, str_length
           tail = :binary.part values, total_length, byte_size(values) - total_length
 
-          string = serialized_string #! (?)
+          string = serialized_string
+
           {string, tail}
         :bytes -> deserialize_from_stream(values, :string)
-        :"V4ector<long>" -> # length 1 only, some ugly hotfix
-          type = :long
-          :binary.part(values, 4+4, 16) |> deserialize_from_stream(type)
+        :'Vector<long>' -> # length 1 only, some ugly hotfix
+          :binary.part(values, 4 + 4, 8) |> deserialize_from_stream(:long)
         _ -> {values, ""}
       end
   end
@@ -151,4 +151,10 @@ defmodule MTProto.TL.Parse do
     <<int::signed-size(len)-unit(8)>> = bin
     int
   end
+
+  # Change the endianness of a block
+  def changeBlockEndianness(blocks, unit), do: blocks |> :binary.bin_to_list
+                                                      |> Enum.chunk(unit)
+                                                      |> Enum.reverse
+                                                      |> :binary.list_to_bin
 end

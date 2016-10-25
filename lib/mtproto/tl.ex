@@ -111,9 +111,9 @@ defmodule MTProto.TL do
   end
 
   # Build set_client_DH_params payload
-  def set_client_DH_params(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
+  def set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv) do
     # Build & encrypt client_DH_inner_data
-    encrypted_data = client_DH_inner_data nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv
+    encrypted_data = client_DH_inner_data nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv
 
     payload = Build.payload "set_client_DH_params", %{
         nonce: nonce,
@@ -123,8 +123,7 @@ defmodule MTProto.TL do
   end
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
-  defp client_DH_inner_data(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) do
-    b = Crypto.rand_bytes(32) # random number
+  defp client_DH_inner_data(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv) do
     g_b = :crypto.mod_pow g, b, dh_prime # g^b % dh_prime
     data = Build.encode("client_DH_inner_data",
                         %{

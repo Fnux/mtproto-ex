@@ -78,13 +78,14 @@ defmodule MTProto do
       g: g, # g is always equal to 2, 3, 4, 5, 6 or 7
       g_a: g_a,
       nonce: nonce,
-      server_nonce: server_nonce2,
+      server_nonce: server_nonce,
       server_time: server_time,
     } = server_DH_params_ok
 
     # set_client_DH_params
     IO.puts "Sending client DH params..."
-    TL.set_client_DH_params(nonce, server_nonce, g, dh_prime, tmp_aes_key, tmp_aes_iv) |> TCP.wrap(2) |> TCP.send(socket)
+    b = Crypto.rand_bytes(32) # random number
+    TL.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv) |> TCP.wrap(2) |> TCP.send(socket)
 
     IO.puts "Receiving ACK on key creation..."
     # dh_gen_ok/retry/fail
@@ -93,5 +94,15 @@ defmodule MTProto do
     dh_gen = wrapped_dh_gen |> :binary.list_to_bin
                             |> TCP.unwrap
                             |> TL.Parse.decode
+
+    %{
+      predicate: dh_result
+    } = dh_gen
+    if dh_result == "dh_gen_ok" do
+      IO.puts "Computing Authorization key..."
+      auth_key = :crypto.mod_pow g_a, b, dh_prime
+    else
+      raise "Error : dh_gen returned #{dh_result}"
+    end
   end
 end

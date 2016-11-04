@@ -2,6 +2,7 @@ defmodule MTProto do
   alias MTProto.TL
   alias MTProto.TCP
   alias MTProto.TL.Parse
+  alias MTProto.TL.Build
   alias MTProto.Crypto
 
   @server "149.154.167.40"
@@ -23,7 +24,21 @@ defmodule MTProto do
   """
   def initConnection do
     {_, socket} = makeSocket
-    makeAuthKey socket
+    {auth_key, server_salt} = makeAuthKey socket
+    {auth_key, server_salt, socket}
+  end
+
+  @doc """
+    Encrypted ping-pong with Telegram's servers.
+  """
+  def ping(auth_key, server_salt, session_id, socket) do
+     data = Build.encode("ping",
+        %{ping_id: Crypto.rand_bytes(16)}
+     )
+     encrypted = Crypto.encrypt_message auth_key, server_salt, session_id, data
+     encrypted |> TCP.wrap(3) |> TCP.send(socket)
+
+     TCP.recv(socket)
   end
 
   @doc """
@@ -99,8 +114,15 @@ defmodule MTProto do
       predicate: dh_result
     } = dh_gen
     if dh_result == "dh_gen_ok" do
-      IO.puts "Computing Authorization key..."
+      IO.puts "Computing Authorization key and server salt..."
       auth_key = :crypto.mod_pow g_a, b, dh_prime
+
+      # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
+      salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+      salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+      server_salt = :erlang.bxor salt_left, salt_right
+
+      {auth_key, server_salt}
     else
       raise "Error : dh_gen returned #{dh_result}"
     end

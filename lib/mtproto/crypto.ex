@@ -62,4 +62,44 @@ defmodule MTProto.Crypto do
   end
 
   defp decompose_pq(_,_,g,_,_), do: g
+
+  # Encrypt a message
+  def encrypt_message(auth_key, server_salt, session_id, payload) do
+    #auth_key = auth_key |> Build.encode_signed
+
+    msg = Build.encode_signed(server_salt) <> Build.encode_signed(server_salt)
+                                           <> payload
+    msg_key = :crypto.hash :sha, msg
+
+    # Encryption procedure
+    sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 0, 32))
+    sha1_b = :crypto.hash(:sha, :binary.part(auth_key, 32, 16) <> msg_key
+                                                               <> :binary.part(auth_key, 48, 16))
+    sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 64, 32) <> msg_key)
+    sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 96, 32))
+    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12) 
+                                         <> :binary.part(sha1_c, 4, 12)
+    aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
+                                         <> :binary.part(sha1_c, 16, 4) 
+                                         <> :binary.part(sha1_d, 0, 8)
+
+    # Padding
+    x =  byte_size(msg) / 16
+    y = x - Float.floor(x)
+    padding =
+      if y == 0.0 do
+        0
+      else
+        (1-y) * 16 |> round
+      end
+
+    msg = msg <> <<0::size(padding)-unit(8)>>
+
+    # Ecnrypt
+    encrypted_data = :crypto.block_encrypt :aes_ige256, aes_key, aes_iv, msg
+
+    auth_key_id = :crypto.hash :sha, auth_key
+
+    auth_key_id <> msg_key <> encrypted_data
+  end
 end

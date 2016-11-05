@@ -4,6 +4,7 @@ defmodule MTProto do
   alias MTProto.TL.Parse
   alias MTProto.TL.Build
   alias MTProto.Crypto
+  alias MTProto.Registry
 
   @server "149.154.167.40"
   @port 80
@@ -22,10 +23,28 @@ defmodule MTProto do
   @doc """
     Initialize a connection for standard usage.
   """
-  def initConnection do
-    {_, socket} = makeSocket
+  def init do
+    # Generate an authorization key
+    {:ok, socket} = makeSocket
     {auth_key, server_salt} = makeAuthKey socket
+    TCP.close socket
+
+    # Store generated data in the registry
+    {:ok, params} = Registry.new
     {auth_key, server_salt, socket}
+    Registry.set params, %{auth_key: auth_key, server_salt: server_salt}
+
+    {:parameters, params}
+  end
+
+  @doc """
+     Create a new session.
+  """
+  def createSession(params) do
+    {:ok, socket} = makeSocket
+    {:ok, handler} = MTProto.Session.Handler.start(socket, params)
+    {:ok, listener} = MTProto.Session.Listener.start(socket, handler)
+    handler
   end
 
   @doc """
@@ -46,6 +65,7 @@ defmodule MTProto do
     See https://core.telegram.org/mtproto/auth_key
   """
   def makeAuthKey(socket) do
+    {_, socket} = makeSocket
     # req_pq
     IO.puts "Requesting PQ..."
     TL.req_pq |> TCP.wrap(0) |> TCP.send(socket)
@@ -113,18 +133,17 @@ defmodule MTProto do
     %{
       predicate: dh_result
     } = dh_gen
-    if dh_result == "dh_gen_ok" do
-      IO.puts "Computing Authorization key and server salt..."
-      auth_key = :crypto.mod_pow g_a, b, dh_prime
 
-      # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
-      salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-      salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-      server_salt = :erlang.bxor salt_left, salt_right
+    unless dh_result == "dh_gen_ok", do: raise "Error : dh_gen returned #{dh_result}"
 
-      {auth_key, server_salt}
-    else
-      raise "Error : dh_gen returned #{dh_result}"
-    end
+    IO.puts "Computing Authorization key and server salt..."
+    auth_key = :crypto.mod_pow g_a, b, dh_prime
+
+    # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
+    salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+    salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+    server_salt = :erlang.bxor salt_left, salt_right
+
+    {auth_key, server_salt}
   end
 end

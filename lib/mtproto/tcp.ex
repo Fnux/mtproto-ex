@@ -4,6 +4,11 @@ defmodule MTProto.TCP do
     :gen_tcp.connect(String.to_char_list(address), port, [{:packet, :raw}, {:active, false}])
   end
 
+  # Close a TCP Socket
+  def close(socket) do
+    :gen_tcp.close(socket)
+  end
+
   # Send data over socket
   def send(data, socket) do
     :gen_tcp.send socket, data

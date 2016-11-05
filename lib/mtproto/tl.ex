@@ -152,4 +152,14 @@ defmodule MTProto.TL do
     # Encrypt with AES256 IGE
     :crypto.block_encrypt :aes_ige256, tmp_aes_key, tmp_aes_iv, data_with_hash
   end
+
+  ####################
+  # Service Messages #
+  ####################
+
+  def ping do
+    data = Build.encode("ping",
+     %{ping_id: Crypto.rand_bytes(16)}
+   )
+  end
 end

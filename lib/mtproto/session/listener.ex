@@ -2,8 +2,8 @@ defmodule MTProto.Session.Listener do
   use GenServer
   alias MTProto.TCP
 
-  def start(socket, handler) do
-     GenServer.start(__MODULE__, {socket, handler}, [])
+  def start_link(socket, handler) do
+     GenServer.start_link(__MODULE__, {socket, handler}, [])
   end
 
   def init({socket, handler}) do

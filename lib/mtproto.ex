@@ -43,7 +43,6 @@ defmodule MTProto do
   def createSession(params) do
     {:ok, socket} = makeSocket
     {:ok, handler} = MTProto.Session.Handler.start(socket, params)
-    {:ok, listener} = MTProto.Session.Listener.start(socket, handler)
     handler
   end
 

@@ -2,6 +2,7 @@ defmodule MTProto.Session.Handler do
   use GenServer
   alias MTProto.TCP
   alias MTProto.TL.Build
+  alias MTProto.TL.Parse
   alias MTProto.Crypto
   alias MTProto.Registry
 
@@ -10,12 +11,21 @@ defmodule MTProto.Session.Handler do
   end
 
   def init({socket, crypto}) do
+    MTProto.Session.Listener.start_link(socket, self)
     session_id = Crypto.rand_bytes(16)
     {:ok, %{socket: socket, sequence: 0, session_id: session_id, crypto: crypto}}
   end
 
   def handle_info({:recv, msg}, state) do
-    IO.inspect msg
+     # In the event of an error, the server may send a packet whose payload consists of 4 bytes
+     # as the error code.
+     if byte_size(msg) == 4 do
+       <<error::signed-little-size(4)-unit(8)>> = msg
+       IO.puts "Received error #{error} from the server !"
+     end
+
+     IO.inspect msg |> Parse.decode
+
     {:noreply, state}
   end
 

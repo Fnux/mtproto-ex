@@ -40,15 +40,7 @@ defmodule MTProto.TCP do
      real_crc32 = :binary.part(packet, 0, byte_size(packet) -4) |> :erlang.crc32
 
      if real_crc32 != expected_crc32, do: raise "CRC32 mismatch! Possibly corrupted packet!"
-
      payload = :binary.part(packet, 2*4, len - 4*3)
-
-     # In the event of an error, the server may send a packet whose payload consists of 4 bytes
-     # as the error code.
-     if byte_size(payload) == 4 do
-       <<error::signed-little-size(4)-unit(8)>> = payload
-       raise "Received error #{error} on sequence #{seq} from the server."
-     end
 
      payload
   end

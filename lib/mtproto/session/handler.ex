@@ -1,7 +1,6 @@
 defmodule MTProto.Session.Handler do
   use GenServer
   alias MTProto.TCP
-  alias MTProto.TL.Build
   alias MTProto.TL.Parse
   alias MTProto.Crypto
   alias MTProto.Registry
@@ -12,7 +11,7 @@ defmodule MTProto.Session.Handler do
 
   def init({socket, crypto}) do
     MTProto.Session.Listener.start_link(socket, self)
-    session_id = Crypto.rand_bytes(16)
+    session_id = Crypto.rand_bytes(8)
     {:ok, %{socket: socket, sequence: 0, session_id: session_id, crypto: crypto}}
   end
 

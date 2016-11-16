@@ -69,7 +69,7 @@ defmodule MTProto.Crypto do
 
     msg = Build.encode_signed(server_salt) <> Build.encode_signed(session_id)
                                            <> payload
-    msg_key = :crypto.hash :sha, msg
+    msg_key = :crypto.hash(:sha, msg) |> :binary.part(4,16)
 
     # Encryption procedure
     sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 0, 32))
@@ -98,7 +98,7 @@ defmodule MTProto.Crypto do
     # Ecnrypt
     encrypted_data = :crypto.block_encrypt :aes_ige256, aes_key, aes_iv, msg
 
-    auth_key_id = :crypto.hash :sha, auth_key
+    auth_key_id = :crypto.hash(:sha, auth_key) |> :binary.part(12, 8)
 
     auth_key_id <> msg_key <> encrypted_data
   end

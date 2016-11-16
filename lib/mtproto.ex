@@ -47,19 +47,6 @@ defmodule MTProto do
   end
 
   @doc """
-    Encrypted ping-pong with Telegram's servers.
-  """
-  def ping(auth_key, server_salt, session_id, socket) do
-     data = Build.encode("ping",
-        %{ping_id: Crypto.rand_bytes(16)}
-     )
-     encrypted = Crypto.encrypt_message auth_key, server_salt, session_id, data
-     encrypted |> TCP.wrap(3) |> TCP.send(socket)
-
-     TCP.recv(socket)
-  end
-
-  @doc """
     Create an Authorization Key.
     See https://core.telegram.org/mtproto/auth_key
   """

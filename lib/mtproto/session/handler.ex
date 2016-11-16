@@ -20,7 +20,7 @@ defmodule MTProto.Session.Handler do
      # as the error code.
 
      unless byte_size(msg) == 4 do
-       IO.inspect msg |> Parse.decode
+       IO.inspect msg #|> Parse.decode
      else
        <<error::signed-little-size(4)-unit(8)>> = msg
        IO.puts "Received error #{error} from the server !"

@@ -1,8 +1,11 @@
 defmodule MTProto.TL.Build do
   alias MTProto.TL
 
-  # Build a payload given a constructor and argumentd
+  # Build a payload given a constructor and argument
   def payload(method, args), do: encode(method, args) |> wrap
+
+  # Build an encryptable payload
+  def encryptable_payload(method, args), do: encode(method, args) |> wrap_encryptable
 
   # Encode & Serialize
   def encode(method, params, schema \\ :methods) do
@@ -82,6 +85,17 @@ defmodule MTProto.TL.Build do
     serialize(auth_id_key, :head8) <> serialize(msg_id, :head8)
                                    <> serialize(msg_len, :head4)
                                    <> data
+  end
+
+  # wrap the data as an encryptable payload
+  def wrap_encryptable(data) do
+    msg_id = generate_id
+    seq_no = 0 # <- supposed to do something about it
+    msg_len = byte_size(data)
+
+    serialize(msg_id, :head8) <> serialize(seq_no, :head4)
+                              <> serialize(msg_len, :head4)
+                              <> data
   end
 
   # Generate id for messages,  Unix time * 2^32

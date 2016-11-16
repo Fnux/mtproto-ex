@@ -158,7 +158,7 @@ defmodule MTProto.TL do
   ####################
 
   def ping do
-    data = Build.encode("ping",
+    data = Build.encryptable_payload("ping",
      %{ping_id: Crypto.rand_bytes(16)}
    )
   end

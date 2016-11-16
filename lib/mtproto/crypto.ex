@@ -67,7 +67,7 @@ defmodule MTProto.Crypto do
   def encrypt_message(auth_key, server_salt, session_id, payload) do
     #auth_key = auth_key |> Build.encode_signed
 
-    msg = Build.encode_signed(server_salt) <> Build.encode_signed(server_salt)
+    msg = Build.encode_signed(server_salt) <> Build.encode_signed(session_id)
                                            <> payload
     msg_key = :crypto.hash :sha, msg
 
@@ -77,10 +77,10 @@ defmodule MTProto.Crypto do
                                                                <> :binary.part(auth_key, 48, 16))
     sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 64, 32) <> msg_key)
     sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 96, 32))
-    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12) 
+    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12)
                                          <> :binary.part(sha1_c, 4, 12)
     aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
-                                         <> :binary.part(sha1_c, 16, 4) 
+                                         <> :binary.part(sha1_c, 16, 4)
                                          <> :binary.part(sha1_d, 0, 8)
 
     # Padding

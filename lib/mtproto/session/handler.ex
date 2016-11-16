@@ -19,12 +19,13 @@ defmodule MTProto.Session.Handler do
   def handle_info({:recv, msg}, state) do
      # In the event of an error, the server may send a packet whose payload consists of 4 bytes
      # as the error code.
-     if byte_size(msg) == 4 do
+
+     unless byte_size(msg) == 4 do
+       IO.inspect msg |> Parse.decode
+     else
        <<error::signed-little-size(4)-unit(8)>> = msg
        IO.puts "Received error #{error} from the server !"
      end
-
-     IO.inspect msg |> Parse.decode
 
     {:noreply, state}
   end

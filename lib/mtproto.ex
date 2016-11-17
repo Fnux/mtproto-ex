@@ -77,7 +77,7 @@ defmodule MTProto do
     # req_DH_params
     Logger.info "Requesting server DH params..."
     new_nonce = Crypto.rand_bytes(32)
-    req_DH_params = TL.req_DH_params(nonce, server_nonce, new_nonce, pq, key_fingerprint)
+    req_DH_params = TL.req_DH_params(nonce, server_nonce, new_nonce, pq, Enum.at(key_fingerprint,0))
     req_DH_params |> TCP.wrap(1) |> TCP.send(socket)
 
     # server_DH_params_ok/fail

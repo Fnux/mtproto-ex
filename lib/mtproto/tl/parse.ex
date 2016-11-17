@@ -17,8 +17,7 @@ defmodule MTProto.TL.Parse do
     expected_params = description |> List.first |> Map.get("params")
 
     # Map & deserialize given the structure
-    map = deserialize(expected_params, values, %{})
-
+    {map, _} = deserialize(expected_params, values, %{})
     # Add the predicate's name to the output, kinda useful
     map |> Map.put :predicate, description |> List.first |> Map.get "predicate"
   end
@@ -38,7 +37,7 @@ defmodule MTProto.TL.Parse do
   end
 
   # Returns the map once everything was processed
-  def deserialize([], _, map), do: map
+  def deserialize([], tail, map), do: {map, tail}
 
 
   # Deserialize given the type and the value
@@ -87,10 +86,49 @@ defmodule MTProto.TL.Parse do
 
           {string, tail}
         :bytes -> deserialize_from_stream(values, :string)
-        :'Vector<long>' -> # length 1 only, some ugly hotfix
-          :binary.part(values, 4 + 4, 8) |> deserialize_from_stream(:long)
-        _ -> {values, ""}
+        #:'Vector<long>' -> # length 1 only, some ugly hotfix
+        #  :binary.part(values, 4 + 4, 8) |> deserialize_from_stream(:long)
+        _ ->
+          if Atom.to_string(type) =~ ~r/^Vector/ui do
+            deserialize_vector(values, type)
+          else
+            deserialize_boxed(values, type)
+          end
       end
+  end
+
+  # Deserialize a boxed type
+  def deserialize_boxed(values,type) do
+    type = Atom.to_string(type) |> String.replace("%","")
+    schema = TL.schema :constructors
+    description = Enum.filter schema, fn
+           x -> Map.get(x, "type") == type
+    end
+
+    expected_params = description |> List.first |> Map.get("params")
+
+    IO.inspect description
+    IO.inspect values
+    {value, tail} = deserialize(expected_params, values, %{})
+  end
+
+  # Deserialize a Vector
+  def deserialize_vector(values, type) do
+    type = Atom.to_string(type) |> String.split(~r{<|>})
+                                |> Enum.at(1)
+                                |> String.to_atom
+
+    size = :binary.part(values, 4, 4) |> deserialize(:int)
+    {value,tail} = extractVectorData(size, :binary.part(values,8, byte_size(values) -8), type)
+    {value, tail}
+  end
+
+  def extractVectorData(0, tail, type, output), do: {output, tail}
+  def extractVectorData(size, values, type, output \\ []) do
+    {value, tail} = deserialize_from_stream values, type
+    output = output ++ [value]
+    size = size - 1
+    extractVectorData(size, tail, type, output)
   end
 
   # Unwrap

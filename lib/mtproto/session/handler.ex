@@ -27,14 +27,14 @@ defmodule MTProto.Session.Handler do
        # Check if the message is encrypted or not
        if auth_key_id == <<0::8*8>> do
          Logger.info "Receiving unencrypted message on session #{session_id}."
-         IO.inspect msg |> Parse.decode
+         IO.inspect msg |> Parse.payload
        else
          Logger.info "Receiving encrypted message on session #{session_id}."
 
          crypto = Map.get(state, :crypto) |> Registry.get
          auth_key = Map.get crypto, :auth_key
 
-         IO.inspect msg |> Crypto.decrypt_message(auth_key) |> Parse.unwrap |> Parse.decode
+         IO.inspect msg |> Crypto.decrypt_message(auth_key) |> Parse.payload
        end
 
      else

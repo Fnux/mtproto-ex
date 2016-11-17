@@ -65,8 +65,7 @@ defmodule MTProto do
 
     resPQ = wrappedResPQ |> :binary.list_to_bin
                          |> TCP.unwrap
-                         |> TL.Parse.unwrap(:plain)
-                         |> TL.Parse.decode
+                         |> Parse.payload
 
     %{nonce: nonce,
       server_nonce: server_nonce,
@@ -76,6 +75,7 @@ defmodule MTProto do
 
     # req_DH_params
     Logger.info "Requesting server DH params..."
+
     new_nonce = Crypto.rand_bytes(32)
     req_DH_params = TL.req_DH_params(nonce, server_nonce, new_nonce, pq, Enum.at(key_fingerprint,0))
     req_DH_params |> TCP.wrap(1) |> TCP.send(socket)
@@ -86,8 +86,8 @@ defmodule MTProto do
 
     server_DH_params = wrapped_server_DH_params |> :binary.list_to_bin
                                                 |> TCP.unwrap
-                                                |> TL.Parse.unwrap(:plain)
-                                                |> TL.Parse.decode
+                                                |> TL.Parse.payload
+
     %{predicate: req_DH,
       encrypted_answer: encrypted_answer,
       server_nonce: server_nonce} = server_DH_params
@@ -119,8 +119,7 @@ defmodule MTProto do
 
     dh_gen = wrapped_dh_gen |> :binary.list_to_bin
                             |> TCP.unwrap
-                            |> TL.Parse.unwrap(:plain)
-                            |> TL.Parse.decode
+                            |> TL.Parse.payload
 
     %{
       predicate: dh_result

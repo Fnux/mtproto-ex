@@ -103,14 +103,13 @@ defmodule MTProto.TL do
     answer = :binary.part answer_with_hash, sha_length, byte_size(answer_with_hash) - sha_length
 
     # Extract constructor & values from answer
-    constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:meta4) # server_DH_params_ok#d0e8075c
+    constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:int) # server_DH_params_ok#d0e8075c
     constructor = -1249309254 #! hostfix, override ^
     values = :binary.part(answer, 4, byte_size(answer) - 4) # remove constructor ^
 
-    map = %{constructor: constructor, values: values}
-
     # Parse & deserialize
-    map |> MTProto.TL.Parse.decode
+    schema = Parse.scan(constructor)
+    MTProto.TL.Parse.decode(values, schema)
   end
 
   # Build set_client_DH_params payload

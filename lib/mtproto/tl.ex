@@ -35,7 +35,7 @@ defmodule MTProto.TL do
   # Build the payload for req_pq
   def req_pq do
     nonce = Crypto.rand_bytes(16)
-    Build.payload("req_pq", %{nonce: nonce})
+    Build.payload("req_pq", %{nonce: nonce}, :plain)
   end
 
   # Build the payload for req_DH_params
@@ -57,12 +57,15 @@ defmodule MTProto.TL do
 
 
     # Build req_DH_params payload
-    payload = Build.payload("req_DH_params", %{nonce: nonce,
-                                    server_nonce: server_nonce,
-                                    p: p,
-                                    q: q,
-                                    public_key_fingerprint: f,
-                                    encrypted_data: encrypted_data})
+    payload = Build.payload("req_DH_params",
+                             %{nonce: nonce,
+                               server_nonce: server_nonce,
+                               p: p,
+                               q: q,
+                               public_key_fingerprint: f,
+                               encrypted_data: encrypted_data},
+                             :plain
+                           )
   end
 
   # Build & encrypt p_q_inner_data (will be included in req_DH_params' payload)
@@ -107,7 +110,7 @@ defmodule MTProto.TL do
     map = %{constructor: constructor, values: values}
 
     # Parse & deserialize
-    map |> MTProto.TL.Parse.decode(:non_wrapped)
+    map |> MTProto.TL.Parse.decode
   end
 
   # Build set_client_DH_params payload
@@ -115,11 +118,8 @@ defmodule MTProto.TL do
     # Build & encrypt client_DH_inner_data
     encrypted_data = client_DH_inner_data nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv
 
-    payload = Build.payload "set_client_DH_params", %{
-        nonce: nonce,
-        server_nonce: server_nonce,
-        encrypted_data: encrypted_data
-      }
+    payload = Build.payload("set_client_DH_params", %{nonce: nonce,
+      server_nonce: server_nonce, encrypted_data: encrypted_data}, :plain)
   end
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
@@ -158,7 +158,7 @@ defmodule MTProto.TL do
   ####################
 
   def ping do
-    data = Build.encryptable_payload("ping",
+    data = Build.payload("ping",
      %{ping_id: Crypto.rand_bytes(16)}
    )
   end

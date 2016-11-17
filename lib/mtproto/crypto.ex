@@ -97,9 +97,38 @@ defmodule MTProto.Crypto do
 
     # Ecnrypt
     encrypted_data = :crypto.block_encrypt :aes_ige256, aes_key, aes_iv, msg
-
     auth_key_id = :crypto.hash(:sha, auth_key) |> :binary.part(12, 8)
 
     auth_key_id <> msg_key <> encrypted_data
+  end
+
+  # Decrypt a message
+  def decrypt_message(payload, auth_key) do
+
+    # Check if auth_key and auth_key_id match
+    auth_key_id = :binary.part payload, 0, 8
+    expected_auth_key_id = :crypto.hash(:sha, auth_key) |> :binary.part(12, 8)
+    unless auth_key_id == expected_auth_key_id do
+      raise "Wrong authorization key !"
+    end
+
+    # Get msg_key
+    msg_key = :binary.part payload, 8, 16
+
+    # Decryption procedure
+    sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 8, 32))
+    sha1_b = :crypto.hash(:sha, :binary.part(auth_key, 40, 16) <> msg_key
+                                                               <> :binary.part(auth_key, 56, 16))
+    sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 72, 32) <> msg_key)
+    sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 104, 32))
+    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12)
+                                         <> :binary.part(sha1_c, 4, 12)
+    aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
+                                         <> :binary.part(sha1_c, 16, 4)
+                                         <> :binary.part(sha1_d, 0, 8)
+
+    # Decrypt
+    encrypted_data = :binary.part payload, 24, byte_size(payload) - 24
+    data = :crypto.block_decrypt :aes_ige256, aes_key, aes_iv, encrypted_data
   end
 end

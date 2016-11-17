@@ -2,8 +2,7 @@ defmodule MTProto.TL.Parse do
   alias MTProto.TL
 
   # Parse and deserialize a payload given the constructor
-  def decode(data, wrapped \\ :wrapped, struct \\ :constructors) do
-    if wrapped == :wrapped, do: data = data |> unwrap
+  def decode(data, struct \\ :constructors) do
 
     # Extract constructor and values
     constructor = Map.get data, :constructor
@@ -95,7 +94,7 @@ defmodule MTProto.TL.Parse do
   end
 
   # Unwrap
-  def unwrap(data) do
+  def unwrap(data, :plain) do
     auth_key_id = :binary.part(data, 0, 8) |> deserialize(:meta8)
     msg_id = :binary.part(data, 8, 8) |> deserialize(:meta8)
     msg_len = :binary.part(data, 16, 4) |> deserialize(:meta4)
@@ -106,11 +105,33 @@ defmodule MTProto.TL.Parse do
 
     %{
       auth_key_id: auth_key_id,
-      msg_id: msg_id,
-      msg_len: msg_len,
+      message_id: msg_id,
+      message_data_length: msg_len,
       constructor: constructor,
       values: values
      }
+  end
+
+  def unwrap(data) do
+    salt = :binary.part(data, 0, 8) |> deserialize(:meta8)
+    session_id = :binary.part(data, 8, 8) |> deserialize(:meta8)
+    message_id = :binary.part(data, 16, 8) |> deserialize(:meta8)
+    seq_no =:binary.part(data, 24, 4) |> deserialize(:meta4)
+    message_data_length =  :binary.part(data, 28, 4) |> deserialize(:meta4)
+    message_data = :binary.part(data, 32, message_data_length)
+
+    constructor = :binary.part(message_data, 0, 4) |> deserialize(:meta4)
+    values = :binary.part(message_data, 4, message_data_length - 4)
+
+    %{
+      salt: salt,
+      session_id: session_id,
+      message_id: message_id,
+      seq_no: seq_no,
+      msg_len: message_data_length,
+      constructor: constructor,
+      values: values
+    }
   end
 
   # Compute the prefix, content and total (including prefix and padding) length

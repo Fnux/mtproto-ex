@@ -1,5 +1,6 @@
 defmodule MTProto.Session.Handler do
   use GenServer
+  require Logger
   alias MTProto.TCP
   alias MTProto.TL.Parse
   alias MTProto.Crypto
@@ -16,14 +17,29 @@ defmodule MTProto.Session.Handler do
   end
 
   def handle_info({:recv, msg}, state) do
+     session_id = Map.get state, :session_id
+
      # In the event of an error, the server may send a packet whose payload consists of 4 bytes
      # as the error code.
-
      unless byte_size(msg) == 4 do
-       IO.inspect msg #|> Parse.decode
+       auth_key_id = :binary.part msg, 0, 8
+
+       # Check if the message is encrypted or not
+       if auth_key_id == <<0::8*8>> do
+         Logger.info "Receiving unencrypted message on session #{session_id}."
+         IO.inspect msg |> Parse.decode
+       else
+         Logger.info "Receiving encrypted message on session #{session_id}."
+
+         crypto = Map.get(state, :crypto) |> Registry.get
+         auth_key = Map.get crypto, :auth_key
+
+         IO.inspect msg |> Crypto.decrypt_message(auth_key) |> Parse.unwrap |> Parse.decode
+       end
+
      else
        <<error::signed-little-size(4)-unit(8)>> = msg
-       IO.puts "Received error #{error} from the server !"
+       Logger.info "Received error #{error} on session #{session_id}."
      end
 
     {:noreply, state}

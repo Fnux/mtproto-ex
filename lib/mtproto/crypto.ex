@@ -63,6 +63,28 @@ defmodule MTProto.Crypto do
 
   defp decompose_pq(_,_,g,_,_), do: g
 
+  # See https://core.telegram.org/mtproto/description#defining-aes-key-and-initialization-vector
+  def build_message_aes(auth_key, msg_key, x) do
+    # sha1_a
+    sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, x, 32))
+    # sha1_b
+    sha1_b = :crypto.hash(:sha, :binary.part(auth_key, 32 + x, 16) <> msg_key
+                                                                   <> :binary.part(auth_key, 48 + x, 16))
+    # sha1_c
+    sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 64 + x, 32) <> msg_key)
+    # sha1_d
+    sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 96 + x, 32))
+    # aes_key
+    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12)
+                                         <> :binary.part(sha1_c, 4, 12)
+    # aes_iv
+    aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
+                                         <> :binary.part(sha1_c, 16, 4)
+                                         <> :binary.part(sha1_d, 0, 8)
+    # return
+    {aes_key, aes_iv}
+  end
+
   # Encrypt a message
   def encrypt_message(auth_key, server_salt, session_id, payload) do
     #auth_key = auth_key |> Build.encode_signed
@@ -71,17 +93,8 @@ defmodule MTProto.Crypto do
                                            <> payload
     msg_key = :crypto.hash(:sha, msg) |> :binary.part(4,16)
 
-    # Encryption procedure
-    sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 0, 32))
-    sha1_b = :crypto.hash(:sha, :binary.part(auth_key, 32, 16) <> msg_key
-                                                               <> :binary.part(auth_key, 48, 16))
-    sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 64, 32) <> msg_key)
-    sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 96, 32))
-    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12)
-                                         <> :binary.part(sha1_c, 4, 12)
-    aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
-                                         <> :binary.part(sha1_c, 16, 4)
-                                         <> :binary.part(sha1_d, 0, 8)
+    # get encryption keys
+    {aes_key, aes_iv} = build_message_aes(auth_key, msg_key, 0)
 
     # Padding
     x =  byte_size(msg) / 16
@@ -93,7 +106,7 @@ defmodule MTProto.Crypto do
         (1-y) * 16 |> round
       end
 
-    msg = msg <> <<0::size(padding)-unit(8)>>
+    msg = <<msg::binary, :crypto.strong_rand_bytes(padding)::binary>>
 
     # Ecnrypt
     encrypted_data = :crypto.block_encrypt :aes_ige256, aes_key, aes_iv, msg
@@ -115,17 +128,8 @@ defmodule MTProto.Crypto do
     # Get msg_key
     msg_key = :binary.part payload, 8, 16
 
-    # Decryption procedure
-    sha1_a = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 8, 32))
-    sha1_b = :crypto.hash(:sha, :binary.part(auth_key, 40, 16) <> msg_key
-                                                               <> :binary.part(auth_key, 56, 16))
-    sha1_c = :crypto.hash(:sha, :binary.part(auth_key, 72, 32) <> msg_key)
-    sha1_d = :crypto.hash(:sha, msg_key <> :binary.part(auth_key, 104, 32))
-    aes_key = :binary.part(sha1_a, 0, 8) <> :binary.part(sha1_b, 8, 12)
-                                         <> :binary.part(sha1_c, 4, 12)
-    aes_iv = :binary.part(sha1_a, 8, 12) <> :binary.part(sha1_b, 0, 8)
-                                         <> :binary.part(sha1_c, 16, 4)
-                                         <> :binary.part(sha1_d, 0, 8)
+    # get decryption keys
+    {aes_key, aes_iv} = build_message_aes(auth_key, msg_key, 8)
 
     # Decrypt
     encrypted_data = :binary.part payload, 24, byte_size(payload) - 24

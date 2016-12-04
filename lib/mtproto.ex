@@ -35,7 +35,7 @@ defmodule MTProto do
     {auth_key, server_salt, socket}
     Registry.set params, %{auth_key: auth_key, server_salt: server_salt}
 
-    {:parameters, params}
+    params
   end
 
   @doc """

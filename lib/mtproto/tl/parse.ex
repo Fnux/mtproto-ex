@@ -81,13 +81,13 @@ defmodule MTProto.TL.Parse do
   def decode(data, schema) do
     expected_params = schema |> List.first |> Map.get("params")
 
-    map = extract(expected_params, data)
+    {_, map} = extract(expected_params, data)
 
     map |> Map.put(:predicate, schema |> List.first |> Map.get("predicate"))
   end
 
   # Extract
-  def extract([], data_tail, map), do: map
+  def extract([], data_tail, map), do: {data_tail, map}
   def extract([schema_head | schema_tail], data, map \\ %{}) do
     # Get the name and the type of the value from the structure
     name = Map.get(schema_head, "name") |> String.to_atom
@@ -132,11 +132,12 @@ defmodule MTProto.TL.Parse do
         {string, tail}
 
       # Bytes are handled as strings
-      :bytes -> deserialize(:pack, data, :string)
+      :bytes ->
+        deserialize(:pack, data, :string)
 
       # Anything else. Either a vector or a boxed type
       _ ->
-        if Atom.to_string(type) =~ ~r/^Vector/ui do
+        if Atom.to_string(type) =~ ~r/^vector/ui do
           deserialize(:vector, data, type)
         else
           deserialize(:boxed, data, type)
@@ -151,13 +152,16 @@ defmodule MTProto.TL.Parse do
                                 |> Enum.at(1)
                                 |> String.to_atom
 
-    # get the number of elements
-    size = :binary.part(data, 4, 4) |> deserialize(:int)
+    # check vector id, size & offset
+    vector = :binary.part(data, 0, 4) |> deserialize(:int)
+    {size, offset} =
+      if (vector == 0x1cb5c415) do
+        {:binary.part(data, 4, 4) |> deserialize(:int), 8}
+      else
+        {:binary.part(data, 0, 4) |> deserialize(:int), 4}
+      end
 
-    # type (4 bytes) + size (4 ytes)
-    offset = 8
     {value, tail} = deserialize(:vector, :binary.part(data, offset, byte_size(data) - offset), size, type)
-    {value, tail}
   end
 
   defp deserialize(:vector, tail, 0, type, values), do: {values, tail}
@@ -172,17 +176,30 @@ defmodule MTProto.TL.Parse do
 
   # Deserialize a boxed element
   defp deserialize(:boxed, data, type) do
-    # Extract type
     type = Atom.to_string(type) |> String.replace("%","")
+    {schema, description, offset} =
+      unless (type == "Object") do
+      # Get schema
+      schema = TL.schema :constructors
+      description = Enum.filter schema, fn
+        x -> Map.get(x, "type") == type
+      end
 
-    # Get schema
-    schema = TL.schema :constructors
-    description = Enum.filter schema, fn
-           x -> Map.get(x, "type") == type
-    end
+      {schema, description, 0}
+      else
+        type = :binary.part(data, 0, 4) |> deserialize(:int)
+        schema = TL.schema :constructors
+        description = Enum.filter schema, fn
+          x -> Map.get(x, "id") |> String.to_integer == type
+        end
+        {schema, description, 4}
+      end
 
-    # Deserialize
-    {value, tail} = decode(data, schema)
+      expected_params = description |> List.first |> Map.get("params")
+      {tail, map} = extract(expected_params, :binary.part(data, offset, byte_size(data) - offset))
+      map = map |> Map.put(:predicate, description |> List.first |> Map.get("predicate"))
+
+      {map, tail}
   end
 
   # Deserialize a single element

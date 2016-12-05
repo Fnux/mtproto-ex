@@ -1,6 +1,10 @@
 defmodule MTProto.TL.Parse do
   alias MTProto.TL
 
+  @moduledoc """
+    MTProto payload parser.
+  """
+
   # Parse a payload
   def payload(data) do
     auth_key_id = :binary.part(data, 0, 8)
@@ -108,6 +112,10 @@ defmodule MTProto.TL.Parse do
       :int ->
         {head, tail} = binary_split(data, 4)
         <<value::signed-size(4)-little-unit(8)>> = head
+        {value, tail}
+      :int64 ->
+        {head, tail} = binary_split(data, 8)
+        <<value::signed-big-size(8)-unit(8)>> = head
         {value, tail}
       :int128 ->
         {head, tail} = binary_split(data, 16)

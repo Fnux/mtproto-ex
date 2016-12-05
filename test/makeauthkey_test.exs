@@ -29,7 +29,7 @@ defmodule MakeAuthKeyTest do
       pq: pq,
       server_public_key_fingerprints: pkey_fingerprint,
       server_nonce: server_nonce
-    } =  Parse.decode resPQ
+    } =  Parse.payload resPQ
 
     # Assert
     assert nonce == expected_nonce
@@ -71,7 +71,7 @@ defmodule MakeAuthKeyTest do
     # Extract encrypted_data
     %{predicate: req_DH,
       encrypted_answer: encrypted_answer,
-      server_nonce: server_nonce} = server_DH_params |> TL.Parse.decode
+      server_nonce: server_nonce} = server_DH_params |> TL.Parse.payload
 
     # Decypt
     {tmp_aes_key, tmp_aes_iv} = MTProto.Crypto.build_tmp_aes(server_nonce, new_nonce)

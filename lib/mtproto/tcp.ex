@@ -1,4 +1,7 @@
 defmodule MTProto.TCP do
+  @moduledoc false
+  # Basic wrapper over :gen_tcp
+
   # Create a TCP socket
   def connect(address, port) do
     :gen_tcp.connect(String.to_char_list(address), port, [{:packet, :raw}, {:active, false}])

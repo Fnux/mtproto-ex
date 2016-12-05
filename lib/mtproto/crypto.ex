@@ -3,6 +3,8 @@ defmodule MTProto.Crypto do
   alias MTProto.TL.Parse
 
   @key "priv/public.key"
+  @moduledoc false
+  # Provide crypto utils related to MTProto.
 
   # Get the components of the server's public key
   def get_key do

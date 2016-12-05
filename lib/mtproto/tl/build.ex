@@ -1,6 +1,10 @@
 defmodule MTProto.TL.Build do
   alias MTProto.TL
 
+  @moduledoc """
+    MTProto payload builder.
+  """
+
   # Build a payload given a constructor and argument
   def payload(method, args, :plain), do: encode(method, args) |> wrap(:plain)
 

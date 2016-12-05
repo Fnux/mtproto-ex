@@ -15,128 +15,36 @@ defmodule MTProto do
   """
 
   @doc """
-    Create a socket to Telegram's servers.
+    Start the supervision tree. Initialize the procedure to generate 
+    an authorization key if no authorization key is stored in the registry.
   """
-  def makeSocket(server \\ @server, port \\ @port) do
-    TCP.connect server, port
+  def start() do
+    MTProto.Supervisor.start
+
+    if Registry.get(:auth_key) == nil do
+      Logger.debug "No auth key found, initilizing auth key request"
+      send :handler, {:send_plain, TL.req_pq}
+    end
+
+    :ok
   end
 
   @doc """
-    Initialize parameters for standard usage.
+    Returns the status of the main supervisor.
   """
-  def init do
-    # Generate an authorization key
-    {:ok, socket} = makeSocket
-    {auth_key, server_salt} = makeAuthKey socket
-    TCP.close socket
-
-    # Store generated data in the registry
-    {:ok, params} = Registry.new
-    {auth_key, server_salt, socket}
-    Registry.set params, %{auth_key: auth_key, server_salt: server_salt}
-
-    params
-  end
+  def status(), do: MTProto.Supervisor.status()
 
   @doc """
-     Create a new session.
+    Stop the main supervisor.
   """
-  def makeSession(params) do
-    {:ok, socket} = makeSocket
-    {:ok, handler} = MTProto.Session.Handler.start(socket, params)
-    handler
-  end
+  def stop(), do: MTProto.Supervisor.stop()
 
   @doc """
-    Create an Authorization Key.
-    See https://core.telegram.org/mtproto/auth_key
+    Create a new session.
+
+    Returns `{:ok, pid}`
   """
-  def makeAuthKey(socket) do
-    Logger.info "Resquesting Authorization key !"
-
-    {_, socket} = makeSocket
-    # req_pq
-    Logger.info "Requesting PQ..."
-    TL.req_pq |> TCP.wrap(0) |> TCP.send(socket)
-
-    # res_pq
-    Logger.info "Receiveng ResPQ..."
-    {_, wrappedResPQ} = TCP.recv(socket)
-
-    resPQ = wrappedResPQ |> :binary.list_to_bin
-                         |> TCP.unwrap
-                         |> Parse.payload
-
-    %{nonce: nonce,
-      server_nonce: server_nonce,
-      pq: pq,
-      server_public_key_fingerprints: key_fingerprint
-    } = resPQ
-
-    # req_DH_params
-    Logger.info "Requesting server DH params..."
-
-    new_nonce = Crypto.rand_bytes(32)
-    req_DH_params = TL.req_DH_params(nonce, server_nonce, new_nonce, pq, Enum.at(key_fingerprint,0))
-    req_DH_params |> TCP.wrap(1) |> TCP.send(socket)
-
-    # server_DH_params_ok/fail
-    Logger.info "Receiving server DH params..."
-    {_, wrapped_server_DH_params} = TCP.recv(socket)
-
-    server_DH_params = wrapped_server_DH_params |> :binary.list_to_bin
-                                                |> TCP.unwrap
-                                                |> TL.Parse.payload
-
-    %{predicate: req_DH,
-      encrypted_answer: encrypted_answer,
-      server_nonce: server_nonce} = server_DH_params
-
-    if req_DH == "server_DH_params_fail", do: raise "server_DH_params_fail"
-
-    ## Build keys for decrypting/encrypting AES256 IGE
-    {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, new_nonce)
-
-    ## Decrypt & parse server_DH_params_ok
-    server_DH_params_ok = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
-
-    %{dh_prime: dh_prime,
-      g: g, # g is always equal to 2, 3, 4, 5, 6 or 7
-      g_a: g_a,
-      nonce: nonce,
-      server_nonce: server_nonce,
-      server_time: server_time,
-    } = server_DH_params_ok
-
-    # set_client_DH_params
-    Logger.info "Sending client DH params..."
-    b = Crypto.rand_bytes(32) # random number
-    TL.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv) |> TCP.wrap(2) |> TCP.send(socket)
-
-    Logger.info "Receiving ACK on key creation..."
-    # dh_gen_ok/retry/fail
-    {_, wrapped_dh_gen} = TCP.recv(socket)
-
-    dh_gen = wrapped_dh_gen |> :binary.list_to_bin
-                            |> TCP.unwrap
-                            |> TL.Parse.payload
-
-    %{
-      predicate: dh_result
-    } = dh_gen
-
-    unless dh_result == "dh_gen_ok", do: raise "Error : dh_gen returned #{dh_result}"
-
-    Logger.info "Computing Authorization key and server salt..."
-    auth_key = :crypto.mod_pow g_a, b, dh_prime
-
-    # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
-    salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-    salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-    server_salt = :erlang.bxor salt_left, salt_right
-
-    Logger.info "Authorization key computed !"
-
-    {auth_key, server_salt}
+  def create_session do
+    {status, pid} = MTProto.Session.Supervisor.create_session
   end
 end

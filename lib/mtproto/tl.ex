@@ -4,6 +4,9 @@ defmodule MTProto.TL do
   alias MTProto.TL.Build
 
   @mtproto_schema "priv/mtproto.json"
+  @moduledoc """
+    Implement some TL items.
+  """
 
   # Parse the MTProto TL-schema and output a map.
   def schema(sub \\ :constructors) do

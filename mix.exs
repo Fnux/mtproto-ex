@@ -3,11 +3,18 @@ defmodule MTProto.Mixfile do
 
   def project do
     [app: :mtproto,
-     version: "0.1.0",
+     version: "0.0.1",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
-     deps: deps()]
+     deps: deps(),
+
+     # Docs
+     name: "MTProto",
+     source_url: "https://github.com/Fnux/mtproto-ex",
+     homepage_url: "https://github.com/Fnux/mtproto-ex",
+     docs: [main: "MTProto",
+      extras: ["README.md"]]]
   end
 
   # Configuration for the OTP application
@@ -27,6 +34,6 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:json, "~> 0.3.0"}]
+    [{:json, "~> 0.3.0"}, {:ex_doc, "~> 0.14", only: :dev}]
   end
 end

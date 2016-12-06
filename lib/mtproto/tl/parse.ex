@@ -1,5 +1,6 @@
 defmodule MTProto.TL.Parse do
   alias MTProto.TL
+  alias MTProto.Utils
 
   @moduledoc """
     MTProto payload parser.
@@ -73,7 +74,7 @@ defmodule MTProto.TL.Parse do
   def scan(constructor, struct \\ :constructors) do
 
     # Get the structure of the payload
-    schema = TL.schema struct
+    schema = Utils.schema struct
     description = Enum.filter schema, fn
            x -> Map.get(x, "id") |> String.to_integer == constructor
       end
@@ -188,7 +189,7 @@ defmodule MTProto.TL.Parse do
     {schema, description, offset} =
       unless (type == "Object") do
       # Get schema
-      schema = TL.schema :constructors
+      schema = Utils.schema :constructors
       description = Enum.filter schema, fn
         x -> Map.get(x, "type") == type
       end
@@ -196,7 +197,7 @@ defmodule MTProto.TL.Parse do
       {schema, description, 0}
       else
         type = :binary.part(data, 0, 4) |> deserialize(:int)
-        schema = TL.schema :constructors
+        schema = Utils.schema :constructors
         description = Enum.filter schema, fn
           x -> Map.get(x, "id") |> String.to_integer == type
         end

@@ -7,8 +7,8 @@ defmodule MTProto.Listener do
   alias MTProto.TL.Parse
 
   @moduledoc false
-  @server "149.154.167.40"
-  @port 80
+  @server "149.154.167.91"
+  @port 443
 
   def start_link(opts \\ []) do
      GenServer.start_link(__MODULE__, :ok, [opts])
@@ -20,6 +20,7 @@ defmodule MTProto.Listener do
       {:ok, socket} = TCP.connect(@server, @port)
       Registry.set :socket, socket
       Registry.set :seqno, 0
+      Registry.set :msg_seqno, 0
     end
 
     send self, :listen
@@ -50,6 +51,8 @@ defmodule MTProto.Listener do
       :binary.part(msg, 0, 8) != <<0::8*8>> ->
         decrypted = msg |> Crypto.decrypt_message(Registry.get(:auth_key))
         session_id = :binary.part(decrypted, 8, 8) |> Parse.deserialize(:int64)
+        seqno = :binary.part(decrypted, 24, 4) |> Parse.deserialize(:int)
+        Registry.set :msg_seqno, seqno - 1
         key = ("session_" <> Integer.to_string(session_id)) |> String.to_atom
         session_handler = Registry.get key
         send session_handler, {:recv, Parse.payload(decrypted)}

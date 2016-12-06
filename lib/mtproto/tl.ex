@@ -3,33 +3,9 @@ defmodule MTProto.TL do
   alias MTProto.TL.Parse
   alias MTProto.TL.Build
 
-  @mtproto_schema "priv/mtproto.json"
   @moduledoc """
     Implement some TL items.
   """
-
-  # Parse the MTProto TL-schema and output a map.
-  def schema(sub \\ :constructors) do
-    {:ok, json} = File.read @mtproto_schema
-    {:ok, schema} = JSON.decode json
-    schema[Atom.to_string sub]
-  end
-
-  # Search in the MTProto TL-schema.
-  def search(type, name) do
-    schema = schema(type)
-    field =
-      case type do
-        :methods -> "method"
-        :constructors -> "predicate"
-      end
-
-    description = Enum.filter schema, fn
-          x -> Map.get(x, field) == name
-    end
-
-    description
-  end
 
   ###############
   # makeAuthKey #

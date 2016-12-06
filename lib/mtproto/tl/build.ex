@@ -1,5 +1,7 @@
 defmodule MTProto.TL.Build do
   alias MTProto.TL
+  alias MTProto.Utils
+  alias MTProto.Registry
 
   @moduledoc """
     MTProto payload builder.
@@ -14,7 +16,7 @@ defmodule MTProto.TL.Build do
   # Encode & Serialize
   def encode(method, params, schema \\ :methods) do
      # Get the payload structure
-     description = TL.search schema, method
+     description = Utils.search schema, method
      expected_params = description |> List.first |> Map.get("params")
 
      # Map values to their types
@@ -94,7 +96,7 @@ defmodule MTProto.TL.Build do
   # wrap the data as an encryptable payload
   def wrap(data) do
     msg_id = generate_id
-    seq_no = 0 # <- supposed to do something about it
+    seq_no = Registry.get(:msg_seqno) * 2 + 1 # <- supposed to do something about it
     msg_len = byte_size(data)
 
     serialize(msg_id, :head8) <> serialize(seq_no, :head4)

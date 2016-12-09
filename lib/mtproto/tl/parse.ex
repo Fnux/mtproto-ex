@@ -1,5 +1,4 @@
 defmodule MTProto.TL.Parse do
-  alias MTProto.TL
   alias MTProto.Utils
 
   @moduledoc """
@@ -92,8 +91,9 @@ defmodule MTProto.TL.Parse do
   end
 
   # Extract
+  def extract(schema, data_tail, map \\ %{})
   def extract([], data_tail, map), do: {data_tail, map}
-  def extract([schema_head | schema_tail], data, map \\ %{}) do
+  def extract([schema_head | schema_tail], data, map) do
     # Get the name and the type of the value from the structure
     name = Map.get(schema_head, "name") |> String.to_atom
     type = Map.get(schema_head, "type") |> String.to_atom
@@ -154,39 +154,10 @@ defmodule MTProto.TL.Parse do
     end
   end
 
-  # Deserialize a vector
-  defp deserialize(:vector, data, type) do
-    # Extract internal type (:Vector<type>)
-    type = Atom.to_string(type) |> String.split(~r{<|>})
-                                |> Enum.at(1)
-                                |> String.to_atom
-
-    # check vector id, size & offset
-    vector = :binary.part(data, 0, 4) |> deserialize(:int)
-    {size, offset} =
-      if (vector == 0x1cb5c415) do
-        {:binary.part(data, 4, 4) |> deserialize(:int), 8}
-      else
-        {:binary.part(data, 0, 4) |> deserialize(:int), 4}
-      end
-
-    {value, tail} = deserialize(:vector, :binary.part(data, offset, byte_size(data) - offset), size, type)
-  end
-
-  defp deserialize(:vector, tail, 0, type, values), do: {values, tail}
-  defp deserialize(:vector, data, size, type, values \\ []) do
-    {value, tail} = deserialize(:pack, data, type)
-    values = values ++ [value]
-
-    # loop
-    size = size - 1
-    deserialize(:vector, tail, size, type, values)
-  end
-
   # Deserialize a boxed element
   defp deserialize(:boxed, data, type) do
     type = Atom.to_string(type) |> String.replace("%","")
-    {schema, description, offset} =
+    {_, description, offset} =
       unless (type == "Object") do
       # Get schema
       schema = Utils.schema :constructors
@@ -209,6 +180,37 @@ defmodule MTProto.TL.Parse do
       map = map |> Map.put(:predicate, description |> List.first |> Map.get("predicate"))
 
       {map, tail}
+  end
+
+  # Deserialize a vector
+  defp deserialize(:vector, data, type) do
+    # Extract internal type (:Vector<type>)
+    type = Atom.to_string(type) |> String.split(~r{<|>})
+                                |> Enum.at(1)
+                                |> String.to_atom
+
+    # check vector id, size & offset
+    vector = :binary.part(data, 0, 4) |> deserialize(:int)
+    {size, offset} =
+      if (vector == 0x1cb5c415) do
+        {:binary.part(data, 4, 4) |> deserialize(:int), 8}
+      else
+        {:binary.part(data, 0, 4) |> deserialize(:int), 4}
+      end
+
+    # {value, tail}
+    deserialize(:vector, :binary.part(data, offset, byte_size(data) - offset), size, type)  
+  end
+
+  defp deserialize(meta, data, size, type, values \\ [])
+  defp deserialize(:vector, tail, 0, _, values), do: {values, tail}
+  defp deserialize(:vector, data, size, type, values) do
+    {value, tail} = deserialize(:pack, data, type)
+    values = values ++ [value]
+
+    # loop
+    size = size - 1
+    deserialize(:vector, tail, size, type, values)
   end
 
   # Deserialize a single element

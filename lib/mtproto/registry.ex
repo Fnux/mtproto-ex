@@ -13,11 +13,14 @@ defmodule MTProto.Registry do
   # Set a value given its keys.
   def set(registry, key_1, key_2, value) do
     Agent.update(registry, fn(map) ->
-                 unless Map.has_key?(map, key_1) do
-                  map = Map.put(map, key_1, Map.new)
-                 end
-                  Kernel.put_in(map, [key_1, key_2], value)
-                 end)
+      map =
+        unless Map.has_key?(map, key_1) do
+          Map.put(map, key_1, Map.new)
+        else
+          map
+        end
+        Kernel.put_in(map, [key_1, key_2], value)
+    end)
   end
 
   # Delete a subtree given its key.

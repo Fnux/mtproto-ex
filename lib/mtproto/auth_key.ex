@@ -10,6 +10,11 @@ defmodule MTProto.AuthKey do
   @moduledoc false
   # Process inputs and answers during the generation of the authentification key.
 
+  def req_pq(session_id) do
+    req_pq = TL.req_pq
+    Handler.send_plain req_pq, session_id
+  end
+
   def resPQ(msg, session_id) do
     %{nonce: nonce,
      server_nonce: server_nonce,
@@ -48,7 +53,7 @@ defmodule MTProto.AuthKey do
       g_a: g_a,
       nonce: nonce,
       server_nonce: server_nonce,
-      server_time: server_time} = server_DH_params_ok
+      server_time: _} = server_DH_params_ok
 
       b = Crypto.rand_bytes(32) # random number
       set_client_DH_params = TL.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv)
@@ -62,18 +67,24 @@ defmodule MTProto.AuthKey do
       Handler.send_plain set_client_DH_params, session_id
   end
 
+  # Check + Abort ?
   def server_DH_params_fail(msg, session_id) do
-    Logger.error "server_DH_params_fail"
+    new_nonce = Registry.get :session, session_id, :new_nonce
+    auth_key = build_auth_key(session_id)
+
+    %{new_nonce_hash: new_nonce_hash} = msg
+    check_dh_hash(auth_key, new_nonce, new_nonce_hash, 0)
+
+    Logger.error "server_DH_params_fail : abort authorization key generation."
   end
 
   def dh_gen_ok(msg, session_id) do
     server_nonce = Registry.get :session, session_id, :server_nonce
     new_nonce = Registry.get :session, session_id, :new_nonce
-    g_a = Registry.get :session, session_id, :g_a
-    b = Registry.get :session, session_id, :b
-    dh_prime = Registry.get :session, session_id, :dh_prime
+    auth_key = build_auth_key(session_id)
 
-    auth_key = :crypto.mod_pow g_a, b, dh_prime
+    %{new_nonce_hash1: new_nonce_hash1} = msg
+    check_dh_hash(auth_key, new_nonce, new_nonce_hash1, 1)
 
     # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
     salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
@@ -89,11 +100,58 @@ defmodule MTProto.AuthKey do
     Logger.info "The authorization key was successfully generated."
   end
 
+  # Check + Retry ?
   def dh_gen_retry(msg, session_id) do
-    Logger.error "dh_gen_retry"
+    new_nonce = Registry.get :session, session_id, :new_nonce
+    auth_key = build_auth_key(session_id)
+
+    %{new_nonce_hash2: new_nonce_hash2} = msg
+    check_dh_hash(auth_key, new_nonce, new_nonce_hash2, 2)
+
+    Logger.warn "dh_gen_retry : retry authorization key generation"
+
+    # Retry
+    Handler.send_plain MTProto.TL.req_pq, session_id
   end
 
+  # Check + Abort ?
   def dh_gen_fail(msg, session_id) do
-    Logger.error "dh_gen_fail"
+    new_nonce = Registry.get :session, session_id, :new_nonce
+    auth_key = build_auth_key(session_id)
+
+    %{new_nonce_hash3: new_nonce_hash3} = msg
+    check_dh_hash(auth_key, new_nonce, new_nonce_hash3, 3)
+
+    Logger.error "dh_gen_fail : abort authorization key generation."
   end
+
+  # Build an authorization key
+  defp build_auth_key(session_id) do
+    g_a = Registry.get :session, session_id, :g_a
+    b = Registry.get :session, session_id, :b
+    dh_prime = Registry.get :session, session_id, :dh_prime
+
+    # compute authorization key
+    :crypto.mod_pow g_a, b, dh_prime
+  end
+
+  # @TODO
+  defp check_dh_hash(_, _, _, _), do: :nothing
+
+  # Check that the given new_nonce_hash is coherent. Broken.
+  # https://core.telegram.org/mtproto/auth_key#dh-key-exchange-complete
+  #  defp check_dh_hash(auth_key, new_nonce, new_nonce_hash, i) do
+  #    # auth_key_aux_hash is the 64 higher-order bits of SHA1(auth_key).
+  #    # It must not be confused with auth_key_hasha.
+  #    auth_key_aux_hash = :crypto.hash(:sha, auth_key) |> :binary.part(0, 8)
+  #
+  #    bytes = Integer.to_string(new_nonce) <> <<i>> <> auth_key_aux_hash
+  #    sha = :crypto.hash(:sha, bytes)
+  #    size = byte_size(sha)
+  #    current_new_nonce_hash = :binary.part(sha, size - 16, 16)
+  #
+  #    unless new_nonce_hash == current_new_nonce_hash do
+  #      raise "new_nonce_hash mismatch !"
+  #    end
+  #  end
 end

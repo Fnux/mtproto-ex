@@ -26,22 +26,22 @@ defmodule MTProto.Session.Handler do
     {:reply, reply, session_id}
   end
 
-  def send_plain(payload, session_id) do
-    socket = Registry.get :session, session_id, :socket
-    seqno = Registry.get :session, session_id, :seqno
-
-    payload |> TCP.wrap(seqno) |> TCP.send(socket)
-  end
-
   # Send an encrypted_message
   def handle_call({:send, payload}, _from, session_id) do
     reply = send_encrypted(payload, session_id)
     {:reply, reply, session_id}
   end
 
+  def send_plain(payload, session_id) do
+    socket = Registry.get :session, session_id, :socket
+    seqno = Registry.get :session, session_id, :seqno
+
+    Logger.debug "#{session_id} : sending plain message."
+    payload |> TCP.wrap(seqno) |> TCP.send(socket)
+  end
+
   def send_encrypted(payload, session_id) do
     dc = Registry.get :session, session_id, :dc
-    listener = Registry.get :session, session_id, :listener
     auth_key = Registry.get :main, dc, :auth_key
     server_salt = Registry.get :main, dc, :server_salt
 
@@ -50,6 +50,7 @@ defmodule MTProto.Session.Handler do
       seqno = Registry.get :session, session_id, :seqno
 
       encrypted_msg = Crypto.encrypt_message(auth_key, server_salt, session_id, payload)
+      Logger.debug "#{session_id} : sending encrypted message."
       encrypted_msg |> TCP.wrap(seqno) |> TCP.send(socket)
     else
       {:error, "Auth key does not exist"}
@@ -61,9 +62,9 @@ defmodule MTProto.Session.Handler do
     cond do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
-        error = :binary.part payload, 0,4 |> Parse.deserialize(:int)
+        error = :binary.part(payload, 0, 4) |> Parse.deserialize(:int)
         Logger.error "#{session_id} : received error #{error}."
-
+        Brain.process_plain(%{predicate: "error", code: error}, session_id)
       byte_size(payload) >= 8 ->
         auth_key = :binary.part(payload, 0, 8)
 

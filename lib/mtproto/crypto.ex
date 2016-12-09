@@ -135,6 +135,6 @@ defmodule MTProto.Crypto do
 
     # Decrypt
     encrypted_data = :binary.part payload, 24, byte_size(payload) - 24
-    data = :crypto.block_decrypt :aes_ige256, aes_key, aes_iv, encrypted_data
+    :crypto.block_decrypt :aes_ige256, aes_key, aes_iv, encrypted_data
   end
 end

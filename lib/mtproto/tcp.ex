@@ -38,7 +38,7 @@ defmodule MTProto.TCP do
   # Unwrap MTProto payload for TCP
   def unwrap(packet) do
      << len :: little-size(4)-unit(8) >> = :binary.part(packet, 0, 4)
-     << seq :: little-size(4)-unit(8) >> = :binary.part(packet, 4, 4)
+     #<< seqno :: little-size(4)-unit(8) >> = :binary.part(packet, 4, 4)
      << expected_crc32 :: little-size(4)-unit(8)>> = :binary.part(packet, byte_size(packet), -4)
      real_crc32 = :binary.part(packet, 0, byte_size(packet) -4) |> :erlang.crc32
 

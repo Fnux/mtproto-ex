@@ -1,7 +1,5 @@
 defmodule MTProto.TL.Build do
-  alias MTProto.TL
   alias MTProto.Utils
-  alias MTProto.Registry
 
   @moduledoc """
     MTProto payload builder.
@@ -28,7 +26,7 @@ defmodule MTProto.TL.Build do
         end
 
      # Serialized values
-     serialized_values = map |> Enum.map fn {type, value} -> serialize(value, type) end
+     serialized_values = map |> Enum.map(fn {type, value} -> serialize(value, type) end)
 
      # Seralize the constructor
      serialized_method = description |> List.first
@@ -52,11 +50,8 @@ defmodule MTProto.TL.Build do
       :head4 -> <<data::little-signed-size(4)-unit(8)>>
       :head8 -> <<data::little-signed-size(8)-unit(8)>>
       :bytes ->
-        if (is_binary data) do
-          bin = data
-        else
-          bin = encode_signed data
-        end
+        bin = 
+          if (is_binary data), do: data, else: encode_signed(data)
         serialize_string(bin)
     end
   end

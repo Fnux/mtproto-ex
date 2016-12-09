@@ -36,15 +36,13 @@ defmodule MTProto.TL do
 
 
     # Build req_DH_params payload
-    payload = Build.payload("req_DH_params",
-                             %{nonce: nonce,
-                               server_nonce: server_nonce,
-                               p: p,
-                               q: q,
-                               public_key_fingerprint: f,
-                               encrypted_data: encrypted_data},
-                             :plain
-                           )
+    Build.payload("req_DH_params", %{nonce: nonce,
+                  server_nonce: server_nonce,
+                  p: p,
+                  q: q,
+                  public_key_fingerprint: f,
+                  encrypted_data: encrypted_data},
+    :plain)
   end
 
   # Build & encrypt p_q_inner_data (will be included in req_DH_params' payload)
@@ -82,7 +80,7 @@ defmodule MTProto.TL do
     answer = :binary.part answer_with_hash, sha_length, byte_size(answer_with_hash) - sha_length
 
     # Extract constructor & values from answer
-    constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:int) # server_DH_params_ok#d0e8075c
+    #constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:int) # server_DH_params_ok#d0e8075c
     constructor = -1249309254 #! hostfix, override ^
     values = :binary.part(answer, 4, byte_size(answer) - 4) # remove constructor ^
 
@@ -96,8 +94,8 @@ defmodule MTProto.TL do
     # Build & encrypt client_DH_inner_data
     encrypted_data = client_DH_inner_data nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv
 
-    payload = Build.payload("set_client_DH_params", %{nonce: nonce,
-      server_nonce: server_nonce, encrypted_data: encrypted_data}, :plain)
+    Build.payload("set_client_DH_params", %{nonce: nonce,
+                  server_nonce: server_nonce, encrypted_data: encrypted_data}, :plain)
   end
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
@@ -139,8 +137,6 @@ defmodule MTProto.TL do
     Build the payload of a ping message.
   """
   def ping do
-    data = Build.payload("ping",
-     %{ping_id: Crypto.rand_bytes(16)}
-   )
+    Build.payload("ping", %{ping_id: Crypto.rand_bytes(16)})
   end
 end

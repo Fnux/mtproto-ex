@@ -6,9 +6,6 @@ defmodule MTProto.API.Auth do
   """
 
   def check_phone(phone) do
-    data = Build.payload(
-                         "auth.checkPhone",
-                         %{phone_number: phone}
-                       )
+    Build.payload("auth.checkPhone", %{phone_number: phone})
   end
 end

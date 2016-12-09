@@ -50,7 +50,7 @@ defmodule MTProto.TL.Build do
       :head4 -> <<data::little-signed-size(4)-unit(8)>>
       :head8 -> <<data::little-signed-size(8)-unit(8)>>
       :bytes ->
-        bin = 
+        bin =
           if (is_binary data), do: data, else: encode_signed(data)
         serialize_string(bin)
     end
@@ -91,7 +91,8 @@ defmodule MTProto.TL.Build do
   # wrap the data as an encryptable payload
   def wrap(data) do
     msg_id = generate_id
-    seq_no = 0 # <- supposed to do something about it
+    # Set in the handler
+    seq_no = 0
     msg_len = byte_size(data)
 
     serialize(msg_id, :head8) <> serialize(seq_no, :head4)

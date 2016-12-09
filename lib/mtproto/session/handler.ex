@@ -3,6 +3,7 @@ defmodule MTProto.Session.Handler do
   alias MTProto.TCP
   alias MTProto.Registry
   alias MTProto.TL.Parse
+  alias MTProto.TL.Build
   alias MTProto.Crypto
   alias MTProto.Session.Brain
 
@@ -16,6 +17,7 @@ defmodule MTProto.Session.Handler do
   def init(session_id) do
     Registry.set :session, session_id, :handler, self
     Registry.set :session, session_id, :dc, :dc2
+    Registry.set :session, session_id, :msg_seqno, 0
 
     {:ok, session_id}
   end
@@ -49,6 +51,11 @@ defmodule MTProto.Session.Handler do
       socket = Registry.get :session, session_id, :socket
       seqno = Registry.get :session, session_id, :seqno
 
+      # Set the msg_seqno
+      msg_seqno = (Registry.get(:session, session_id, :msg_seqno) * 2 + 1) |> Build.serialize(:int)
+      payload = :binary.part(payload, 0, 8) <> msg_seqno
+                                            <> :binary.part(payload, 12, byte_size(payload) - 12)
+
       encrypted_msg = Crypto.encrypt_message(auth_key, server_salt, session_id, payload)
       Logger.debug "#{session_id} : sending encrypted message."
       encrypted_msg |> TCP.wrap(seqno) |> TCP.send(socket)
@@ -78,9 +85,11 @@ defmodule MTProto.Session.Handler do
           dc = Registry.get :session, session_id, :dc
           auth_key = Registry.get :main, dc, :auth_key
 
-          payload |> Crypto.decrypt_message(auth_key)
-                  |> Parse.payload
-                  |> Brain.process_encrypted(session_id)
+          decrypted = payload |> Crypto.decrypt_message(auth_key)
+          msg_seqno = :binary.part(decrypted, 24, 4) |> Parse.deserialize(:int)
+          Registry.set(:session, session_id, :msg_seqno, msg_seqno)
+          decrypted |> Parse.payload
+                    |> Brain.process_encrypted(session_id)
         end
       true ->
         Logger.error "#{session_id} : received unknow message."

@@ -6,16 +6,15 @@ defmodule MTProto.Supervisor do
 
   # Main supervisor, supervise the registry, the listener and the default handler
 
-  def start do
+  def start_link do
     Supervisor.start_link(__MODULE__, :ok, name: @name)
   end
 
   def init(_) do
     children = [
-      worker(MTProto.Registry, []),
-      worker(MTProto.Listener, [name: :listener]),
-      worker(MTProto.Handler, [name: :handler]),
-      supervisor(MTProto.Session.Supervisor, [])
+      worker(MTProto.Registry, [:main], [restart: :permanent, id: Registry]),
+      worker(MTProto.Registry, [:session], [restart: :permanent, id: SessionRegistry]),
+      supervisor(MTProto.Session.Supervisor, [], [restart: :permanent]),
     ]
 
     supervise(children, strategy: :one_for_one)

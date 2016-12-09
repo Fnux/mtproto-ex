@@ -96,7 +96,7 @@ defmodule MTProto.TL.Build do
   # wrap the data as an encryptable payload
   def wrap(data) do
     msg_id = generate_id
-    seq_no = Registry.get(:msg_seqno) * 2 + 1 # <- supposed to do something about it
+    seq_no = 0 # <- supposed to do something about it
     msg_len = byte_size(data)
 
     serialize(msg_id, :head8) <> serialize(seq_no, :head4)

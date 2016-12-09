@@ -9,9 +9,8 @@ use Mix.Config
 # 3rd-party users, it should be done in your "mix.exs" file.
 
 config :mtproto,
-  api_id: "26553",
-  api_hash: "65748bb68bdff22b7258f17878d55823"
-
+  api_id: "00000",
+  api_hash: "00000"
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

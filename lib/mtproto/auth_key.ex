@@ -5,11 +5,12 @@ defmodule MTProto.AuthKey do
   alias MTProto.Registry
   alias MTProto.TL.Build
   alias MTProto.TL.Parse
+  alias MTProto.Session.Handler
 
   @moduledoc false
   # Process inputs and answers during the generation of the authentification key.
 
-  def resPQ(msg) do
+  def resPQ(msg, session_id) do
     %{nonce: nonce,
      server_nonce: server_nonce,
      pq: pq,
@@ -23,16 +24,19 @@ defmodule MTProto.AuthKey do
       pq,
       Enum.at(key_fingerprint,0))
 
-    Registry.set :new_nonce, new_nonce
-    Registry.set :server_nonce, server_nonce
-    send :handler, {:send_plain, req_DH_params}
+    Registry.set :session, session_id, :new_nonce, new_nonce
+    Registry.set :session, session_id, :server_nonce, server_nonce
+
+    #handler = Registry.get :session, session_id, :handler
+    #MTProto.send handler, req_DH_params, :plain
+    Handler.send_plain req_DH_params, session_id
   end
 
-  def server_DH_params_ok(msg) do
+  def server_DH_params_ok(msg, session_id) do
     %{encrypted_answer: encrypted_answer,
      server_nonce: server_nonce} = msg
+     new_nonce = Registry.get :session, session_id, :new_nonce
 
-     new_nonce = Registry.get :new_nonce
      # Build keys for decrypting/encrypting AES256 IGE
      {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, new_nonce)
 
@@ -49,22 +53,25 @@ defmodule MTProto.AuthKey do
       b = Crypto.rand_bytes(32) # random number
       set_client_DH_params = TL.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv)
 
-      Registry.set :g_a, g_a
-      Registry.set :b, b
-      Registry.set :dh_prime, dh_prime
-      send :handler, {:send_plain, set_client_DH_params}
+      Registry.set :session, session_id, :g_a, g_a
+      Registry.set :session, session_id, :b, b
+      Registry.set :session, session_id, :dh_prime, dh_prime
+
+      #handler = Registry.get :session, session_id, :handler
+      #MTProto.send handler, set_client_DH_params, :plain
+      Handler.send_plain set_client_DH_params, session_id
   end
 
-  def server_DH_params_fail(msg) do
+  def server_DH_params_fail(msg, session_id) do
     Logger.error "server_DH_params_fail"
   end
 
-  def dh_gen_ok(msg) do
-    server_nonce = Registry.get :server_nonce
-    new_nonce = Registry.get :new_nonce
-    g_a = Registry.get :g_a
-    b = Registry.get :b
-    dh_prime = Registry.get :dh_prime
+  def dh_gen_ok(msg, session_id) do
+    server_nonce = Registry.get :session, session_id, :server_nonce
+    new_nonce = Registry.get :session, session_id, :new_nonce
+    g_a = Registry.get :session, session_id, :g_a
+    b = Registry.get :session, session_id, :b
+    dh_prime = Registry.get :session, session_id, :dh_prime
 
     auth_key = :crypto.mod_pow g_a, b, dh_prime
 
@@ -73,20 +80,20 @@ defmodule MTProto.AuthKey do
     salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
     server_salt = :erlang.bxor salt_left, salt_right
 
+    dc = Registry.get :session, session_id, :dc
+    Registry.set :main, dc, :auth_key, auth_key
+    Registry.set :main, dc, :server_salt, server_salt
 
-    Registry.set :auth_key, auth_key
-    Registry.set :server_salt, server_salt
-
-    Registry.drop [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
+    #Registry.drop [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
 
     Logger.info "The authorization key was successfully generated."
   end
 
-  def dh_gen_retry(msg) do
+  def dh_gen_retry(msg, session_id) do
     Logger.error "dh_gen_retry"
   end
 
-  def dh_gen_fail(msg) do
+  def dh_gen_fail(msg, session_id) do
     Logger.error "dh_gen_fail"
   end
 end

@@ -15,6 +15,7 @@ defmodule MTProto.Session.Supervisor do
     supervise(children, strategy: :one_for_one)
   end
 
+  # Create a new session, called by MTProto.create_session/0
   def pop() do
     session_id = Crypto.rand_bytes(8)
     session_id_str = Integer.to_string(session_id)

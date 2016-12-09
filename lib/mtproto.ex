@@ -3,11 +3,15 @@ defmodule MTProto do
   alias MTProto.Registry
 
   @moduledoc """
-  EXPERIMENTAL!
+  /!\ EXPERIMENTAL /!\
+
+  This module provides a basics methods to deal with
+  sessions and send messages.
   """
 
   @doc """
-  Start the supervision tree.
+    Start the supervision tree and register default values.
+    Automatically started.
   """
   def start(_type, _args) do
     out = MTProto.Supervisor.start_link
@@ -23,7 +27,7 @@ defmodule MTProto do
   end
 
   @doc """
-  Create a new session.
+  Create a new session and return the PID of the handler.
 
   Returns `{:ok, pid}`
   """
@@ -31,6 +35,11 @@ defmodule MTProto do
     MTProto.Session.Supervisor.pop()
   end
 
+  @doc """
+  Send a message on the session related to the handler PID,
+  user :plain to send a plain message instead of an encrypted
+  one (default).
+  """
   def send(pid, message, plain \\ false) do
     unless plain do
       GenServer.call pid, {:send, message}
@@ -38,9 +47,4 @@ defmodule MTProto do
       GenServer.call pid, {:send_plain, message}
     end
   end
-
-  # if Registry.get(:auth_key) == nil do
-  #  Logger.debug "No auth key found, initilizing auth key request"
-  #  send :handler, {:send_plain, TL.req_pq}
-  #end
- end
+end

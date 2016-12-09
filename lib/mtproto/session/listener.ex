@@ -4,12 +4,14 @@ defmodule MTProto.Session.Listener do
   alias MTProto.Registry
   alias MTProto.TCP
 
+  @moduledoc false
   @port 443
 
   def start_link(session_id, opts \\ []) do
      GenServer.start_link(__MODULE__, {:start, session_id} , [opts])
   end
 
+  # Initialize the listener
   def init({:start, session_id}) do
     # Get the remote address (depends on the DC)
     dc = Registry.get :session, session_id, :dc
@@ -34,6 +36,7 @@ defmodule MTProto.Session.Listener do
     {:ok, session_id}
   end
 
+  # Listening loop
   def handle_info(:listen, session_id) do
     # Get the socket given the session
     socket = Registry.get :session, session_id, :socket

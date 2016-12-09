@@ -135,6 +135,9 @@ defmodule MTProto.TL do
   # Service Messages #
   ####################
 
+  @doc """
+    Build the payload of a ping message.
+  """
   def ping do
     data = Build.payload("ping",
      %{ping_id: Crypto.rand_bytes(16)}

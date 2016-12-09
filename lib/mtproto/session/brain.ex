@@ -3,6 +3,9 @@ defmodule MTProto.Session.Brain do
   alias MTProto.AuthKey
   alias MTProto.Crypto
 
+  @moduledoc false
+
+  # Process a plain message
   def process_plain(msg, session_id) do
     predicate = Map.get(msg, :predicate)
 
@@ -18,6 +21,7 @@ defmodule MTProto.Session.Brain do
     end
   end
 
+  # Process an encrypted message
   def process_encrypted(message, session_id) do
     IO.inspect message
   end

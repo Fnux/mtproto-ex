@@ -1,15 +1,16 @@
 defmodule MTProto.Registry do
   @moduledoc false
+
   # Provide a registry to store connection-related informations such as
-  # the authorization key, the TCP socket, the TCP sequence number,
-  # the server salt, the session handler pids and temporary values during
-  # the generation of the authorization key.
+  # the authorization keys, the TCP sockets, the TCP sequence numbers,
+  # the server salts, the sessions handler/listener pids and temporary values during
+  # the generation of an authorization key.
 
   def start_link(name) do
     Agent.start_link(fn -> Map.new end, name: name)
   end
 
-  # Set a value given its key.
+  # Set a value given its keys.
   def set(registry, key_1, key_2, value) do
     Agent.update(registry, fn(map) ->
                  unless Map.has_key?(map, key_1) do
@@ -24,7 +25,7 @@ defmodule MTProto.Registry do
     Agent.update(registry, fn(map) -> Map.delete(map, key_1) end)
   end
 
-  # Get an element given its key.
+  # Get an element given its keys.
   def get(registry, key_1, key_2) do
     Agent.get(registry, fn(map) -> Kernel.get_in(map, [key_1, key_2]) end)
   end

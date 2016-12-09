@@ -1,8 +1,10 @@
 defmodule MTProto.Utils do
+  @moduledoc false
   @tl_schema "priv/mtproto.json"
   @api_layer "priv/api_layer_23.json"
 
-  # Parse the MTProto TL-schema and output a map.
+  # Parse the MTProto's TL-schema and the API layer.
+  # Output a map.
   def schema(type \\ :methods) do
     type = Atom.to_string type
     {:ok, tl_schema_json} = File.read @tl_schema
@@ -12,7 +14,7 @@ defmodule MTProto.Utils do
     tl_schema[type] ++ api_layer[type]
   end
 
-  # Search in the MTProto TL-schema.
+  # Search in MTProto'sTL-schma and the API layer.
   def search(type, name) do
     schema = schema(type)
     field =

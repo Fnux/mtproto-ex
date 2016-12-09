@@ -2,9 +2,7 @@ defmodule MTProto.Supervisor do
   use Supervisor
 
   @moduledoc false
-  @name :mtproto_supervisor
-
-  # Main supervisor, supervise the registry, the listener and the default handler
+  @name MTProto.Supervisor
 
   def start_link do
     Supervisor.start_link(__MODULE__, :ok, name: @name)
@@ -18,10 +16,6 @@ defmodule MTProto.Supervisor do
     ]
 
     supervise(children, strategy: :one_for_one)
-  end
-
-  def status do
-    Supervisor.count_children(@name)
   end
 
   def stop do

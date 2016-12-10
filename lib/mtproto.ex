@@ -17,11 +17,11 @@ defmodule MTProto do
     out = MTProto.Supervisor.start_link
 
     # Register DCs
-    Registry.set :main, :dc1, :address, "0.0.0.0"
-    Registry.set :main, :dc2, :address, "149.154.167.40"
-    Registry.set :main, :dc3, :address, "0.0.0.0"
-    Registry.set :main, :dc4, :address, "0.0.0.0"
-    Registry.set :main, :dc5, :address, "0.0.0.0"
+    Registry.set :main, :dc1, :address, "149.154.175.50"
+    Registry.set :main, :dc2, :address, "149.154.167.51"
+    Registry.set :main, :dc3, :address, "149.154.175.100"
+    Registry.set :main, :dc4, :address, "149.154.167.91"
+    Registry.set :main, :dc5, :address, "149.154.171.5"
 
     out
   end

@@ -5,7 +5,6 @@ defmodule MTProto.Session.Listener do
   alias MTProto.TCP
 
   @moduledoc false
-  @port 443
 
   def start_link(session_id, opts \\ []) do
      GenServer.start_link(__MODULE__, {:start, session_id} , [opts])
@@ -13,22 +12,15 @@ defmodule MTProto.Session.Listener do
 
   # Initialize the listener
   def init({:start, session_id}) do
-    # Get the remote address (depends on the DC)
-    dc = Registry.get :session, session_id, :dc
-    address = Registry.get :main, dc, :address
+    session = Registry.get :session, session_id
+    dc = Registry.get :dc, session.dc
 
     # Connect to Telegram's servers
-    {:ok, socket} = TCP.connect address, @port
+    {:ok, socket} = TCP.connect dc.address, dc.port
 
-    # Initial TCP sequence number is 0
-    seqno = 0
-
-    # Register this listener for the session
+    # Register listener and socket
     Registry.set :session, session_id, :listener, self
-
-    # Register the socket and the initial seqno in the registry
     Registry.set :session, session_id, :socket, socket
-    Registry.set :session, session_id, :seqno, seqno
 
     # Start the listening loop
     send self, :listen
@@ -38,11 +30,11 @@ defmodule MTProto.Session.Listener do
 
   # Listening loop
   def handle_info(:listen, session_id) do
-    # Get the socket given the session
-    socket = Registry.get :session, session_id, :socket
+    # Get session
+    session = Registry.get :session, session_id
 
     # Wait for incoming data
-    {:ok, data} = TCP.recv(socket)
+    {:ok, data} = TCP.recv(session.socket)
     Logger.debug "#{session_id} : incoming message."
 
     # Unwrap
@@ -50,12 +42,10 @@ defmodule MTProto.Session.Listener do
                    |> TCP.unwrap
 
     # Dispatch to the related handler
-    handler = Registry.get :session, session_id, :handler
-    send handler, {:recv, payload}
+    send session.handler, {:recv, payload}
 
     # Update the sequence number
-    seqno = Registry.get(:session, session_id, :seqno)
-    Registry.set :session, session_id, :seqno, seqno + 1
+    Registry.set :session, session_id, :seqno, session.seqno + 1
 
     # Loop
     send self, :listen
@@ -63,11 +53,14 @@ defmodule MTProto.Session.Listener do
     {:noreply, session_id}
   end
 
-  def terminate(reason, session) do
-    # Close the connection
-    TCP.close(Registry.get :session, session, :socket)
+  def terminate(reason, session_id) do
+    # Get session
+    session = Registry.get :session, session_id
 
-    Logger.debug "Terminate listener on session #{session}."
-    {:shutdown, reason}
+    # Close the connection
+    TCP.close(session.socket)
+
+    Logger.debug "#{session_id} : terminate listener."
+    {:died, reason}
   end
 end

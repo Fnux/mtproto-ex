@@ -6,18 +6,17 @@ defmodule MTProto.Session.Handler do
   alias MTProto.TL.Build
   alias MTProto.Crypto
   alias MTProto.Session.Brain
+  alias MTProto.Session
 
   @moduledoc false
 
   def start_link(session_id) do
-    GenServer.start(__MODULE__, session_id, [])
+    GenServer.start_link(__MODULE__, session_id, [])
   end
 
   # Initialize the handler
   def init(session_id) do
-    Registry.set :session, session_id, :handler, self
-    Registry.set :session, session_id, :dc, :dc2
-    Registry.set :session, session_id, :msg_seqno, 0
+    Registry.set :session, session_id, %Session{handler: self, dc: 4}
 
     {:ok, session_id}
   end
@@ -35,30 +34,25 @@ defmodule MTProto.Session.Handler do
   end
 
   def send_plain(payload, session_id) do
-    socket = Registry.get :session, session_id, :socket
-    seqno = Registry.get :session, session_id, :seqno
+    session = Registry.get :session, session_id
 
     Logger.debug "#{session_id} : sending plain message."
-    payload |> TCP.wrap(seqno) |> TCP.send(socket)
+    payload |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
   end
 
   def send_encrypted(payload, session_id) do
-    dc = Registry.get :session, session_id, :dc
-    auth_key = Registry.get :main, dc, :auth_key
-    server_salt = Registry.get :main, dc, :server_salt
+    session = Registry.get :session, session_id
+    dc = Registry.get :dc, session.dc
 
-    if auth_key != nil && auth_key != 0 do
-      socket = Registry.get :session, session_id, :socket
-      seqno = Registry.get :session, session_id, :seqno
-
+    if dc.auth_key != nil && dc.auth_key != 0 do
       # Set the msg_seqno
-      msg_seqno = (Registry.get(:session, session_id, :msg_seqno) * 2 + 1) |> Build.serialize(:int)
+      msg_seqno = (session.msg_seqno * 2 + 1) |> Build.serialize(:int)
       payload = :binary.part(payload, 0, 8) <> msg_seqno
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
-      encrypted_msg = Crypto.encrypt_message(auth_key, server_salt, session_id, payload)
+      encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
       Logger.debug "#{session_id} : sending encrypted message."
-      encrypted_msg |> TCP.wrap(seqno) |> TCP.send(socket)
+      encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
     else
       {:error, "Auth key does not exist"}
     end
@@ -66,6 +60,7 @@ defmodule MTProto.Session.Handler do
 
   # Receive a message, parse and dispatch.
   def handle_info({:recv, payload}, session_id) do
+    session = Registry.get :session, session_id
     cond do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
@@ -82,10 +77,9 @@ defmodule MTProto.Session.Handler do
         else
           # Encrypted message
           Logger.debug("#{session_id} : received encrypted message.")
-          dc = Registry.get :session, session_id, :dc
-          auth_key = Registry.get :main, dc, :auth_key
+          dc = Registry.get :dc, session.dc
 
-          decrypted = payload |> Crypto.decrypt_message(auth_key)
+          decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
           msg_seqno = :binary.part(decrypted, 24, 4) |> Parse.deserialize(:int)
           Registry.set(:session, session_id, :msg_seqno, msg_seqno)
           decrypted |> Parse.payload
@@ -101,5 +95,6 @@ defmodule MTProto.Session.Handler do
   def terminate(reason, state) do
     Logger.error "Session #{Integer.to_string state} is terminating!"
     IO.inspect reason
+    {:error, state}
   end
 end

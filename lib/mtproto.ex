@@ -1,6 +1,7 @@
 defmodule MTProto do
   require Logger
   alias MTProto.Registry
+  alias MTProto.DC
 
   @moduledoc """
   /!\ EXPERIMENTAL /!\
@@ -17,34 +18,12 @@ defmodule MTProto do
     out = MTProto.Supervisor.start_link
 
     # Register DCs
-    Registry.set :main, :dc1, :address, "149.154.175.50"
-    Registry.set :main, :dc2, :address, "149.154.167.51"
-    Registry.set :main, :dc3, :address, "149.154.175.100"
-    Registry.set :main, :dc4, :address, "149.154.167.91"
-    Registry.set :main, :dc5, :address, "149.154.171.5"
+    Registry.set :dc, 1, %DC{id: 1, address: "149.154.175.50"}
+    Registry.set :dc, 2, %DC{id: 2, address: "149.154.167.51"}
+    Registry.set :dc, 3, %DC{id: 3, address: "149.154.175.100"}
+    Registry.set :dc, 4, %DC{id: 4, address: "149.154.167.91"}
+    Registry.set :dc, 1, %DC{id: 5, address: "149.154.171.5"}
 
     out
-  end
-
-  @doc """
-  Create a new session and return the PID of the handler.
-
-  Returns `{:ok, pid}`
-  """
-  def create_session do
-    MTProto.Session.Supervisor.pop()
-  end
-
-  @doc """
-  Send a message on the session related to the handler PID,
-  user :plain to send a plain message instead of an encrypted
-  one (default).
-  """
-  def send(pid, message, plain \\ false) do
-    unless plain do
-      GenServer.call pid, {:send, message}
-    else
-      GenServer.call pid, {:send_plain, message}
-    end
   end
 end

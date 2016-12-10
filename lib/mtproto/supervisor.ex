@@ -10,9 +10,10 @@ defmodule MTProto.Supervisor do
 
   def init(_) do
     children = [
-      worker(MTProto.Registry, [:main], [restart: :permanent, id: Registry]),
+      worker(MTProto.Registry, [:dc], [restart: :permanent, id: DCRegistry]),
       worker(MTProto.Registry, [:session], [restart: :permanent, id: SessionRegistry]),
-      supervisor(MTProto.Session.Supervisor, [], [restart: :permanent]),
+      supervisor(MTProto.Session.HandlerSupervisor, [], [restart: :permanent]),
+      supervisor(MTProto.Session.ListenerSupervisor, [], [restart: :permanent]),
     ]
 
     supervise(children, strategy: :one_for_one)

@@ -11,26 +11,26 @@ defmodule MTProto.Registry do
   end
 
   # Set a value given its keys.
-  def set(registry, key_1, key_2, value) do
+  def set(registry, id, key, value) do
     Agent.update(registry, fn(map) ->
-      map =
-        unless Map.has_key?(map, key_1) do
-          Map.put(map, key_1, Map.new)
-        else
-          map
-        end
-        Kernel.put_in(map, [key_1, key_2], value)
+      initial = Map.get(map, id)
+      updated = Map.put(initial, key, value)
+      Map.put map, id, updated
     end)
   end
 
-  # Delete a subtree given its key.
-  def delete(registry, key_1) do
-    Agent.update(registry, fn(map) -> Map.delete(map, key_1) end)
+  def set(registry, key, struct) do
+    Agent.update(registry, fn(map) -> Map.put(map, key, struct) end)
+  end
+
+  # Delete a value given its key.
+  def drop(registry, key) do
+    Agent.update(registry, fn(map) -> Map.delete(map, key) end)
   end
 
   # Get an element given its keys.
-  def get(registry, key_1, key_2) do
-    Agent.get(registry, fn(map) -> Kernel.get_in(map, [key_1, key_2]) end)
+  def get(registry, key) do
+    Agent.get(registry, fn(map) -> Map.get(map, key) end)
   end
 
   # Dump the whole registry (as a map).

@@ -40,10 +40,10 @@ defmodule MTProto.AuthKey do
   def server_DH_params_ok(msg, session_id) do
     %{encrypted_answer: encrypted_answer,
      server_nonce: server_nonce} = msg
-     new_nonce = Registry.get :session, session_id, :new_nonce
+     session = Registry.get :session, session_id
 
      # Build keys for decrypting/encrypting AES256 IGE
-     {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, new_nonce)
+     {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, session.new_nonce)
 
      ## Decrypt & parse server_DH_params_ok
      server_DH_params_ok = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
@@ -79,34 +79,32 @@ defmodule MTProto.AuthKey do
   end
 
   def dh_gen_ok(msg, session_id) do
-    server_nonce = Registry.get :session, session_id, :server_nonce
-    new_nonce = Registry.get :session, session_id, :new_nonce
-    auth_key = build_auth_key(session_id)
+    session = Registry.get :session, session_id
+    auth_key = build_auth_key(session)
 
     %{new_nonce_hash1: new_nonce_hash1} = msg
-    check_dh_hash(auth_key, new_nonce, new_nonce_hash1, 1)
+    check_dh_hash(auth_key, session.new_nonce, new_nonce_hash1, 1)
 
     # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
-    salt_left = new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-    salt_right = server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+    salt_left = session.new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+    salt_right = session.server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
     server_salt = :erlang.bxor salt_left, salt_right
 
-    dc = Registry.get :session, session_id, :dc
-    Registry.set :main, dc, :auth_key, auth_key
-    Registry.set :main, dc, :server_salt, server_salt
+    Registry.set :dc, session.dc, :auth_key, auth_key
+    Registry.set :dc, session.dc, :server_salt, server_salt
 
-    #Registry.drop [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
+    Registry.drop :session, session_id, [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
 
     Logger.info "The authorization key was successfully generated."
   end
 
   # Check + Retry ?
   def dh_gen_retry(msg, session_id) do
-    new_nonce = Registry.get :session, session_id, :new_nonce
-    auth_key = build_auth_key(session_id)
+    session = Registry.get :session, session_id
+    auth_key = build_auth_key(session)
 
     %{new_nonce_hash2: new_nonce_hash2} = msg
-    check_dh_hash(auth_key, new_nonce, new_nonce_hash2, 2)
+    check_dh_hash(auth_key, session.new_nonce, new_nonce_hash2, 2)
 
     Logger.warn "dh_gen_retry : retry authorization key generation"
 
@@ -116,23 +114,19 @@ defmodule MTProto.AuthKey do
 
   # Check + Abort ?
   def dh_gen_fail(msg, session_id) do
-    new_nonce = Registry.get :session, session_id, :new_nonce
-    auth_key = build_auth_key(session_id)
+    session = Registry.get :session, session_id
+    auth_key = build_auth_key(session)
 
     %{new_nonce_hash3: new_nonce_hash3} = msg
-    check_dh_hash(auth_key, new_nonce, new_nonce_hash3, 3)
+    check_dh_hash(auth_key, session.new_nonce, new_nonce_hash3, 3)
 
     Logger.error "dh_gen_fail : abort authorization key generation."
   end
 
   # Build an authorization key
-  defp build_auth_key(session_id) do
-    g_a = Registry.get :session, session_id, :g_a
-    b = Registry.get :session, session_id, :b
-    dh_prime = Registry.get :session, session_id, :dh_prime
-
+  defp build_auth_key(session) do
     # compute authorization key
-    :crypto.mod_pow g_a, b, dh_prime
+    :crypto.mod_pow session.g_a, session.b, session.dh_prime
   end
 
   # @TODO

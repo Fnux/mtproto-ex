@@ -1,6 +1,5 @@
 defmodule MTProto.Session.ListenerSupervisor do
   use Supervisor
-  alias MTProto.Crypto
   alias MTProto.Registry
 
   @moduledoc false

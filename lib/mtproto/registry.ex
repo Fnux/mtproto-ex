@@ -23,9 +23,19 @@ defmodule MTProto.Registry do
     Agent.update(registry, fn(map) -> Map.put(map, key, struct) end)
   end
 
-  # Delete a value given its key.
+
+  # Delete a subtree given its key
   def drop(registry, key) do
     Agent.update(registry, fn(map) -> Map.delete(map, key) end)
+  end
+
+  # Delete a value given its keys.
+  def drop(registry, id, key) do
+    Agent.update(registry, fn(map) ->
+                 initial = Map.get(map, id)
+                 updated = Map.delete(initial, key)
+                 Map.put map, id, updated
+    end)
   end
 
   # Get an element given its keys.

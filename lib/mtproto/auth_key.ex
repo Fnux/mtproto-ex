@@ -69,11 +69,11 @@ defmodule MTProto.AuthKey do
 
   # Check + Abort ?
   def server_DH_params_fail(msg, session_id) do
-    new_nonce = Registry.get :session, session_id, :new_nonce
+    session = Registry.get :session, session_id
     auth_key = build_auth_key(session_id)
 
     %{new_nonce_hash: new_nonce_hash} = msg
-    check_dh_hash(auth_key, new_nonce, new_nonce_hash, 0)
+    check_dh_hash(auth_key, session.new_nonce, new_nonce_hash, 0)
 
     Logger.error "server_DH_params_fail : abort authorization key generation."
   end

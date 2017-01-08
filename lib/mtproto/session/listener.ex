@@ -19,11 +19,11 @@ defmodule MTProto.Session.Listener do
     {:ok, socket} = TCP.connect dc.address, dc.port
 
     # Register listener and socket
-    Registry.set :session, session_id, :listener, self
+    Registry.set :session, session_id, :listener, self()
     Registry.set :session, session_id, :socket, socket
 
     # Start the listening loop
-    send self, :listen
+    send self(), :listen
 
     {:ok, session_id}
   end
@@ -48,7 +48,7 @@ defmodule MTProto.Session.Listener do
     Registry.set :session, session_id, :seqno, session.seqno + 1
 
     # Loop
-    send self, :listen
+    send self(), :listen
 
     {:noreply, session_id}
   end

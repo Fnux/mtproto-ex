@@ -17,10 +17,15 @@ defmodule MTProto.TCP do
     :gen_tcp.send socket, data
   end
 
-  # Read from socket
+  # Read from socket, timeout in ms
   def recv(socket) do
     :gen_tcp.recv(socket, 0)
   end
+
+  # Read from socket, timeout in ms
+  #def recv(socket, timeout \\ 0) do
+  #  :gen_tcp.recv(socket, 0, timeout)
+  #end
 
   # Serialize MTProto's payload eaders for TCP
   def serialize(data) do

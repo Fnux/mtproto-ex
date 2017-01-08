@@ -1,6 +1,5 @@
 defmodule MTProto.TL do
   alias MTProto.{Payload, Crypto}
-  alias MTProto.TL.{Build, Parse}
 
   @moduledoc """
     Implement some TL items.

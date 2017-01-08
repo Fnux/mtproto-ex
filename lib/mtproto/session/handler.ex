@@ -59,9 +59,9 @@ defmodule MTProto.Session.Handler do
     cond do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
-        error = :binary.part(payload, 0, 4) |> TL.deserialize(:int)
+        error = :binary.part(payload, 0, 4) |> TL.deserialize(:meta32)
         Logger.error "#{session_id} : received error #{error}."
-        Brain.process_plain(%{predicate: "error", code: error}, session_id)
+        Brain.process(%{name: "error", code: error}, session_id, :plain)
       byte_size(payload) >= 8 ->
         auth_key = :binary.part(payload, 0, 8)
 
@@ -69,7 +69,7 @@ defmodule MTProto.Session.Handler do
         if auth_key == <<0::8*8>> do
           Logger.debug("#{session_id} : received plain message.")
           {map, _} = payload |> Payload.parse(:plain)
-          Brain.process_plain(map, session_id)
+          Brain.process(map, session_id, :plain)
         else
           # Encrypted message
           Logger.debug("#{session_id} : received encrypted message.")
@@ -79,7 +79,7 @@ defmodule MTProto.Session.Handler do
           msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
           Registry.set(:session, session_id, :msg_seqno, msg_seqno)
           {map, _} = decrypted |> Payload.parse(:encrypted)
-          Brain.process_encrypted(map, session_id)
+          Brain.process(map, session_id, :encrypted)
         end
       true ->
         Logger.error "#{session_id} : received unknow message."

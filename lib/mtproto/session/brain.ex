@@ -5,7 +5,7 @@ defmodule MTProto.Session.Brain do
   @moduledoc false
 
   # Process a plain message
-  def process_plain(msg, session_id) do
+  def process(msg, session_id, :plain) do
     name = Map.get(msg, :name)
 
     case name do
@@ -22,7 +22,7 @@ defmodule MTProto.Session.Brain do
   end
 
   # Process an encrypted message
-  def process_encrypted(message, session_id) do
+  def process_encrypted(message, session_id, :encrypted) do
     IO.inspect {session_id, message}
   end
 end

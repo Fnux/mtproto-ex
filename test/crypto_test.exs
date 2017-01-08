@@ -1,6 +1,4 @@
 defmodule CryptoTest do
-  alias MTProto.TL.Build
-  alias MTProto.TL.Parse
   use ExUnit.Case
   doctest MTProto
 
@@ -38,6 +36,6 @@ defmodule CryptoTest do
   end
 
   def hexStr2Int(hexStr) do
-    hexStr |> hexStr2Bytes |> Parse.decode_signed
+    hexStr |> hexStr2Bytes |> TL.Binary.decode_signed
   end
 end

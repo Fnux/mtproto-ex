@@ -1,7 +1,7 @@
 defmodule MakeAuthKeyTest do
   use ExUnit.Case
+  alias TL.Binary
   alias MTProto.TL
-  alias MTProto.TL.Parse
 
   doctest MTProto
 
@@ -141,6 +141,6 @@ defmodule MakeAuthKeyTest do
   end
 
   def hexStr2Int(hexStr) do
-    hexStr |> hexStr2Bytes |> Parse.decode_signed
+    hexStr |> hexStr2Bytes |> Binary.decode_signed
   end
 end

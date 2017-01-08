@@ -6,9 +6,9 @@ defmodule MTProto.Session.Brain do
 
   # Process a plain message
   def process_plain(msg, session_id) do
-    predicate = Map.get(msg, :predicate)
+    name = Map.get(msg, :name)
 
-    case predicate do
+    case name do
       "resPQ" -> AuthKey.resPQ(msg, session_id)
       "server_DH_params_ok" -> AuthKey.server_DH_params_ok(msg, session_id)
       "server_DH_params_fail" -> AuthKey.server_DH_params_fail(msg, session_id)
@@ -17,7 +17,7 @@ defmodule MTProto.Session.Brain do
       "dh_gen_retry" -> AuthKey.dh_gen_fail(msg, session_id)
       "error" -> if Map.get(msg, :code) == -404, do: AuthKey.req_pq(session_id)
       _ ->
-        Logger.warn "#{session_id} : received an unknow predicate #{predicate}."
+        Logger.warn "#{session_id} : received an unknow predicate #{name}."
     end
   end
 

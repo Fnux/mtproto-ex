@@ -5,14 +5,7 @@ defmodule MTProto.Payload do
 
   def parse(msg, type \\ :encrypted) do
     auth_key_id = :binary.part(msg, 0, 8)
-
-    # Unwrap the message, given if it was encrypted or not
-    map =
-      if auth_key_id == <<0::8*8>> do
-        msg |> unwrap(:plain)
-      else
-        msg |> unwrap(:encrypted)
-      end
+    map = msg |> unwrap(type)
 
     container = Map.get map, :constructor
     content = Map.get map, :message_content
@@ -22,7 +15,7 @@ defmodule MTProto.Payload do
 
   defp wrap(msg, :plain) do
     auth_id_key = 0
-    msg_id = generate_id()
+    msg_id= generate_id()
     msg_len = byte_size(msg)
     TL.serialize(auth_id_key, :meta64) <> TL.serialize(msg_id, :meta64)
                                        <> TL.serialize(msg_len, :meta32)
@@ -47,7 +40,6 @@ defmodule MTProto.Payload do
 
     constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:meta32)
     message_content = :binary.part(message_data, 4, message_data_length - 4)
-
     %{
       auth_key_id: auth_key_id,
       message_id: messsage_id,
@@ -67,7 +59,6 @@ defmodule MTProto.Payload do
 
     constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:meta32)
     message_content = :binary.part(message_data, 4, message_data_length - 4)
-
     %{
       salt: salt,
       session_id: session_id,

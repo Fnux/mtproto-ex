@@ -68,7 +68,8 @@ defmodule MTProto.Session.Handler do
         # authorization key composed of 8 <<0>> : plain message.
         if auth_key == <<0::8*8>> do
           Logger.debug("#{session_id} : received plain message.")
-          payload |> Payload.parse(:encrypted) |> Brain.process_plain(session_id)
+          {map, _} = payload |> Payload.parse(:plain)
+          Brain.process_plain(map, session_id)
         else
           # Encrypted message
           Logger.debug("#{session_id} : received encrypted message.")
@@ -77,8 +78,8 @@ defmodule MTProto.Session.Handler do
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
           msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
           Registry.set(:session, session_id, :msg_seqno, msg_seqno)
-          decrypted |> Payload.parse(:encrypted)
-                    |> Brain.process_encrypted(session_id)
+          {map, _} = decrypted |> Payload.parse(:encrypted)
+          Brain.process_encrypted(map, session_id)
         end
       true ->
         Logger.error "#{session_id} : received unknow message."

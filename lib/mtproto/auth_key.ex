@@ -43,7 +43,7 @@ defmodule MTProto.AuthKey do
      {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, session.new_nonce)
 
      ## Decrypt & parse server_DH_params_ok
-     server_DH_params_ok = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
+     {server_DH_params_ok, _} = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
 
      %{dh_prime: dh_prime,
       g: g, # g is always equal to 2, 3, 4, 5, 6 or 7

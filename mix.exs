@@ -34,6 +34,6 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:json, "~> 1.0.0"}, {:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, "~> 0.0.1-alpha"}]
+    [{:json, "~> 1.0.0"}, {:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, github: "fnux/telegram-tl-elixir"}]
   end
 end

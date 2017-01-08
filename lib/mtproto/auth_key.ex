@@ -1,10 +1,7 @@
 defmodule MTProto.AuthKey do
   require Logger
-  alias MTProto.TL
-  alias MTProto.Crypto
-  alias MTProto.Registry
-  alias MTProto.TL.Build
-  alias MTProto.TL.Parse
+  alias TL.Binary
+  alias MTProto.{TL, Crypto, Registry}
   alias MTProto.Session.Handler
 
   @moduledoc false
@@ -86,8 +83,8 @@ defmodule MTProto.AuthKey do
     check_dh_hash(auth_key, session.new_nonce, new_nonce_hash1, 1)
 
     # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
-    salt_left = session.new_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
-    salt_right = session.server_nonce |> Build.encode_signed |> :binary.part(0, 8) |> Parse.decode_signed
+    salt_left = session.new_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
+    salt_right = session.server_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
     server_salt = :erlang.bxor salt_left, salt_right
 
     Registry.set :dc, session.dc, :auth_key, auth_key

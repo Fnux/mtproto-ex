@@ -1,9 +1,9 @@
 defmodule MTProto.Mixfile do
-  use Mix.Project
+ use Mix.Project
 
   def project do
-    [app: :mtproto,
-     version: "0.0.1",
+    [app: :telegram_mt,
+     version: "0.0.1-alpha",
      elixir: "~> 1.3",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
@@ -11,10 +11,9 @@ defmodule MTProto.Mixfile do
 
      # Docs
      name: "MTProto",
-     source_url: "https://github.com/Fnux/mtproto-ex",
-     homepage_url: "https://github.com/Fnux/mtproto-ex",
-     docs: [main: "MTProto",
-      extras: ["README.md"]]]
+     source_url: "https://github.com/Fnux/telegram-mt-elixir",
+     homepage_url: "https://github.com/Fnux/telegram-mt-elixir",
+     docs: [main: "MTProto"]]
   end
 
   # Configuration for the OTP application
@@ -35,6 +34,6 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:json, "~> 0.3.0"}, {:ex_doc, "~> 0.14", only: :dev}]
+    [{:json, "~> 1.0.0"}, {:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, "~> 0.0.1-alpha"}]
   end
 end

@@ -1,7 +1,6 @@
 defmodule MTProto.TL do
-  alias MTProto.Crypto
-  alias MTProto.TL.Parse
-  alias MTProto.TL.Build
+  alias MTProto.{Payload, Crypto}
+  alias MTProto.TL.{Build, Parse}
 
   @moduledoc """
     Implement some TL items.
@@ -14,7 +13,7 @@ defmodule MTProto.TL do
   # Build the payload for req_pq
   def req_pq do
     nonce = Crypto.rand_bytes(16)
-    Build.payload("req_pq", %{nonce: nonce}, :plain)
+    Payload.build("req_pq", %{nonce: nonce}, :plain)
   end
 
   # Build the payload for req_DH_params
@@ -36,7 +35,7 @@ defmodule MTProto.TL do
 
 
     # Build req_DH_params payload
-    Build.payload("req_DH_params", %{nonce: nonce,
+    Payload.build("req_DH_params", %{nonce: nonce,
                   server_nonce: server_nonce,
                   p: p,
                   q: q,
@@ -48,16 +47,15 @@ defmodule MTProto.TL do
   # Build & encrypt p_q_inner_data (will be included in req_DH_params' payload)
   def p_q_inner_data(nonce, server_nonce, new_nonce, pq, p, q) do
     # Build and serialize
-    data = Build.encode("p_q_inner_data",
+    data = TL.build("p_q_inner_data",
                         %{ pq: pq,
                            p: p,
                            q: q,
                            nonce: nonce,
                            server_nonce: server_nonce,
                            new_nonce: new_nonce,
-                          },
-                          :constructors
-                        )
+                          })
+
     # data_with_hash := SHA1(data) + data + (any random bytes); such that the length equal 255 bytes;
     #IO.inspect data |> :binary.bin_to_list |> Enum.map fn(x) -> IO.write Integer.to_char_list(x, 16) end
     #IO.inspect byte_size data
@@ -81,12 +79,11 @@ defmodule MTProto.TL do
 
     # Extract constructor & values from answer
     #constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:int) # server_DH_params_ok#d0e8075c
-    constructor = -1249309254 #! hostfix, override ^
+    container = -1249309254 #! hotfix, override ^
     values = :binary.part(answer, 4, byte_size(answer) - 4) # remove constructor ^
 
     # Parse & deserialize
-    schema = Parse.scan(constructor)
-    MTProto.TL.Parse.decode(values, schema)
+    TL.parse(container, values)
   end
 
   # Build set_client_DH_params payload
@@ -94,21 +91,20 @@ defmodule MTProto.TL do
     # Build & encrypt client_DH_inner_data
     encrypted_data = client_DH_inner_data nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv
 
-    Build.payload("set_client_DH_params", %{nonce: nonce,
+    Payload.build("set_client_DH_params", %{nonce: nonce,
                   server_nonce: server_nonce, encrypted_data: encrypted_data}, :plain)
   end
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
   defp client_DH_inner_data(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv) do
     g_b = :crypto.mod_pow g, b, dh_prime # g^b % dh_prime
-    data = Build.encode("client_DH_inner_data",
+    data = TL.build("client_DH_inner_data",
                         %{
                           nonce: nonce,
                           server_nonce: server_nonce,
                           retry_id: 0,
                           g_b: g_b
-                         },
-                         :constructors
+                         }
                        )
 
     # data_with_hash := SHA1(data) + data + (0-15 random bytes); such that length be divisible by 16;
@@ -137,6 +133,6 @@ defmodule MTProto.TL do
     Build the payload of a ping message.
   """
   def ping do
-    Build.payload("ping", %{ping_id: Crypto.rand_bytes(16)})
+    Payload.build("ping", %{ping_id: Crypto.rand_bytes(16)}, :encrypted)
   end
 end

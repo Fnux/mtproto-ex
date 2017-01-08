@@ -1,12 +1,7 @@
 defmodule MTProto.Session.Handler do
   require Logger
-  alias MTProto.TCP
-  alias MTProto.Registry
-  alias MTProto.TL.Parse
-  alias MTProto.TL.Build
-  alias MTProto.Crypto
+  alias MTProto.{TCP, Registry, Crypto, Session, Payload}
   alias MTProto.Session.Brain
-  alias MTProto.Session
 
   @moduledoc false
 
@@ -16,7 +11,7 @@ defmodule MTProto.Session.Handler do
 
   # Initialize the handler
   def init(session_id) do
-    Registry.set :session, session_id, %Session{handler: self, dc: 4}
+    Registry.set :session, session_id, %Session{handler: self(), dc: 4}
 
     {:ok, session_id}
   end
@@ -46,7 +41,7 @@ defmodule MTProto.Session.Handler do
 
     if dc.auth_key != nil && dc.auth_key != 0 do
       # Set the msg_seqno
-      msg_seqno = (session.msg_seqno * 2 + 1) |> Build.serialize(:int)
+      msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:int)
       payload = :binary.part(payload, 0, 8) <> msg_seqno
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
@@ -64,7 +59,7 @@ defmodule MTProto.Session.Handler do
     cond do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
-        error = :binary.part(payload, 0, 4) |> Parse.deserialize(:int)
+        error = :binary.part(payload, 0, 4) |> TL.deserialize(:int)
         Logger.error "#{session_id} : received error #{error}."
         Brain.process_plain(%{predicate: "error", code: error}, session_id)
       byte_size(payload) >= 8 ->
@@ -73,16 +68,16 @@ defmodule MTProto.Session.Handler do
         # authorization key composed of 8 <<0>> : plain message.
         if auth_key == <<0::8*8>> do
           Logger.debug("#{session_id} : received plain message.")
-          payload |> Parse.payload |> Brain.process_plain(session_id)
+          payload |> Payload.parse(:encrypted) |> Brain.process_plain(session_id)
         else
           # Encrypted message
           Logger.debug("#{session_id} : received encrypted message.")
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          msg_seqno = :binary.part(decrypted, 24, 4) |> Parse.deserialize(:int)
+          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
           Registry.set(:session, session_id, :msg_seqno, msg_seqno)
-          decrypted |> Parse.payload
+          decrypted |> Payload.parse(:encrypted)
                     |> Brain.process_encrypted(session_id)
         end
       true ->

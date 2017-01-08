@@ -1,17 +1,13 @@
 defmodule MTProto do
   require Logger
-  alias MTProto.Registry
-  alias MTProto.DC
+  alias MTProto.{Registry, DC}
 
   @moduledoc """
-  /!\ EXPERIMENTAL /!\
-
-  This module provides a basics methods to deal with
-  sessions and send messages.
+  MTProto implementation for Elixir.
   """
 
   @doc """
-    Start the supervision tree and register default values.
+    Start the supervision tree and set default values in the registry.
     Automatically started.
   """
   def start(_type, _args) do

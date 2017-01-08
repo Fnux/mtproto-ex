@@ -1,3 +1,4 @@
 %{"earmark": {:hex, :earmark, "1.0.3", "89bdbaf2aca8bbb5c97d8b3b55c5dd0cff517ecc78d417e87f1d0982e514557b", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.14.5", "c0433c8117e948404d93ca69411dd575ec6be39b47802e81ca8d91017a0cf83c", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, optional: false]}]},
-  "json": {:hex, :json, "0.3.3", "373eb4f7321f898ad6772999f30daf65f9f38e1d3dd4d798d7a82d3b123fe1d3", [:mix], []}}
+  "json": {:hex, :json, "1.0.0", "4824dadb01e14395f65e9d18da294d534326d7eed77996f3c22f74a9870179eb", [:mix], [{:earmark, ">= 0.0.0", [hex: :earmark, optional: false]}]},
+  "telegram_tl": {:hex, :telegram_tl, "0.0.1-alpha", "5d85cb1ae7b327a8a1b459df074f60fb4dd72cd3edfbe1f69fe1f1dd88b587c1", [:mix], [{:json, "~> 1.0.0", [hex: :json, optional: false]}]}}

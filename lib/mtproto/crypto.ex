@@ -1,6 +1,5 @@
 defmodule MTProto.Crypto do
-  alias MTProto.TL.Build
-  alias MTProto.TL.Parse
+  alias TL.Binary
 
   @key "priv/public.key"
   @moduledoc false
@@ -17,8 +16,8 @@ defmodule MTProto.Crypto do
   # Build kyes for decrypting/encrypting AES256 IGE (makeAuthKey)
   def build_tmp_aes(server_nonce, new_nonce) do
     # From int to bits
-    server_nonce = server_nonce |> Build.encode_signed
-    new_nonce = new_nonce |> Build.encode_signed
+    server_nonce = server_nonce |> Binary.encode_signed
+    new_nonce = new_nonce |> Binary.encode_signed
 
     # tmp_aes_key := SHA1(new_nonce + server_nonce) 
     # + substr (SHA1(server_nonce + new_nonce), 0, 12);
@@ -36,7 +35,7 @@ defmodule MTProto.Crypto do
 
   # Generate rand number
   def rand_bytes(n) do
-    :crypto.strong_rand_bytes(n) |> Parse.decode_signed
+    :crypto.strong_rand_bytes(n) |> Binary.decode_signed
   end
 
   # Compute GCD
@@ -91,7 +90,7 @@ defmodule MTProto.Crypto do
   def encrypt_message(auth_key, server_salt, session_id, payload) do
     #auth_key = auth_key |> Build.encode_signed
 
-    msg = Build.encode_signed(server_salt) <> Build.encode_signed(session_id)
+    msg = Binary.encode_signed(server_salt) <> Binary.encode_signed(session_id)
                                            <> payload
     msg_key = :crypto.hash(:sha, msg) |> :binary.part(4,16)
 

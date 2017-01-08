@@ -1,6 +1,5 @@
 defmodule MTProto.Session do
-  alias MTProto.Crypto
-  alias MTProto.Registry
+  alias MTProto.{Crypto, Registry}
 
   defstruct handler: nil,
     listener: nil,

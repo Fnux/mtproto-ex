@@ -36,10 +36,11 @@ defmodule MTProto.Session.Handler do
   end
 
   def send_encrypted(payload, session_id) do
+    IO.puts "send encrypted"
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
-    if dc.auth_key != nil && dc.auth_key != 0 do
+    if dc.auth_key != <<0::8*8>> && dc.auth_key != 0 do
       # Set the msg_seqno
       msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:int)
       payload = :binary.part(payload, 0, 8) <> msg_seqno

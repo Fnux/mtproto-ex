@@ -31,23 +31,22 @@ defmodule MTProto.Session.Handler do
   def send_plain(payload, session_id) do
     session = Registry.get :session, session_id
 
-    Logger.debug "#{session_id} : sending plain message."
+    Logger.debug "[Handler] #{session_id} : sending plain message."
     payload |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
   end
 
   def send_encrypted(payload, session_id) do
-    IO.puts "send encrypted"
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
-    if dc.auth_key != <<0::8*8>> && dc.auth_key != 0 do
+    if dc.auth_key != <<0::8*8>> && dc.auth_key != nil do
       # Set the msg_seqno
-      msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:int)
+      msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:meta32)
       payload = :binary.part(payload, 0, 8) <> msg_seqno
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
       encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
-      Logger.debug "#{session_id} : sending encrypted message."
+      Logger.debug "[Handler] #{session_id} : sending encrypted message."
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
     else
       {:error, "Auth key does not exist"}
@@ -61,7 +60,7 @@ defmodule MTProto.Session.Handler do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
         error = :binary.part(payload, 0, 4) |> TL.deserialize(:meta32)
-        Logger.error "#{session_id} : received error #{error}."
+        Logger.error "[Handler] #{session_id} : received error #{error}."
         Brain.process(%{name: "error", code: error}, session_id, :plain)
       byte_size(payload) >= 8 ->
         auth_key = :binary.part(payload, 0, 8)
@@ -73,24 +72,24 @@ defmodule MTProto.Session.Handler do
           Brain.process(map, session_id, :plain)
         else
           # Encrypted message
-          Logger.debug("#{session_id} : received encrypted message.")
+          Logger.debug("[Handler] #{session_id} : received encrypted message.")
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
+          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:meta32)
           Registry.set(:session, session_id, :msg_seqno, msg_seqno)
           {map, _} = decrypted |> Payload.parse(:encrypted)
           Brain.process(map, session_id, :encrypted)
         end
       true ->
-        Logger.error "#{session_id} : received unknow message."
+        Logger.error "[Handler] #{session_id} : received unknow message."
     end
 
     {:noreply, session_id}
   end
 
   def terminate(reason, state) do
-    Logger.error "Session #{Integer.to_string state} is terminating!"
+    Logger.error "[Handler] Session #{Integer.to_string state} is terminating!"
     IO.inspect reason
     {:error, state}
   end

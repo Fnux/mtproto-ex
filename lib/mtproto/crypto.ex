@@ -9,7 +9,7 @@ defmodule MTProto.Crypto do
   def get_key do
     {_, key} = File.read @key
     [raw] = :public_key.pem_decode key
-    {_,n,e} = :public_key.pem_entry_decode raw
+    {:RSAPublicKey,n,e} = :public_key.pem_entry_decode raw
     {e ,n}
   end
 
@@ -91,7 +91,7 @@ defmodule MTProto.Crypto do
     #auth_key = auth_key |> Build.encode_signed
 
     msg = Binary.encode_signed(server_salt) <> Binary.encode_signed(session_id)
-                                           <> payload
+                                            <> payload
     msg_key = :crypto.hash(:sha, msg) |> :binary.part(4,16)
 
     # get encryption keys

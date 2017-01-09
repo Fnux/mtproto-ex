@@ -20,7 +20,7 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger],
+    [applications: [:logger, :crypto],
      mod: {MTProto, []}]
   end
 

@@ -35,7 +35,7 @@ defmodule MTProto.Session.Listener do
 
     # Wait for incoming data
     {:ok, data} = TCP.recv(session.socket)
-    Logger.debug "#{session_id} : incoming message."
+    Logger.debug "[Listener] #{session_id} : incoming message."
 
     # Unwrap
     payload = data |> :binary.list_to_bin

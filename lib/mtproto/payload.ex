@@ -4,9 +4,8 @@ defmodule MTProto.Payload do
   end
 
   def parse(msg, type \\ :encrypted) do
-    auth_key_id = :binary.part(msg, 0, 8)
+    #auth_key_id = :binary.part(msg, 0, 8)
     map = msg |> unwrap(type)
-
     container = Map.get map, :constructor
     content = Map.get map, :message_content
 
@@ -68,7 +67,6 @@ defmodule MTProto.Payload do
       constructor: constructor,
       message_content: message_content
     }
-
   end
 
   # Generate id for messages,  Unix time * 2^32

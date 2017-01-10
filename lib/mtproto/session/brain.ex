@@ -33,7 +33,7 @@ defmodule MTProto.Session.Brain do
   end
 
   # Process an encrypted message
-  def process_encrypted(message, session_id, :encrypted) do
+  def process(message, session_id, :encrypted) do
     IO.inspect {session_id, message}
   end
 end

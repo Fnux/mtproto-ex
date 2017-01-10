@@ -4,15 +4,17 @@ defmodule MTProto.API.Auth do
   See [core.telegram.org/schema](https://core.telegram.org/schema).
   """
 
+  alias MTProto.Payload
+
   def check_phone(phone) do
-    TL.build("auth.checkPhone", %{phone_number: phone})
+    Payload.build("auth.checkPhone", %{phone_number: phone})
   end
 
   def send_code(phone, sms_type \\ 0, lang \\ "en") do
     api_id = Application.get_env(:mtproto, :api_id)
     api_hash = Application.get_env(:mtproto, :api_hash)
 
-    TL.build("auth.sendCode",
+    Payload.build("auth.sendCode",
                   %{phone_number: phone, sms_type: sms_type, api_id: api_id, api_hash: api_hash, lang_code: lang}
                 )
   end

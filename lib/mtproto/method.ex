@@ -1,4 +1,4 @@
-defmodule MTProto.TL do
+defmodule MTProto.Method do
   alias MTProto.{Payload, Crypto}
 
   @moduledoc """

@@ -1,14 +1,14 @@
 defmodule MTProto.AuthKey do
   require Logger
-  alias TL.Binary
-  alias MTProto.{TL, Crypto, Registry}
+  alias MTProto.{Method, Crypto, Registry}
   alias MTProto.Session.Handler
+  alias TL.Binary
 
   @moduledoc false
   # Process inputs and answers during the generation of the authentification key.
 
   def req_pq(session_id) do
-    req_pq = TL.req_pq
+    req_pq = Method.req_pq
     Handler.send_plain req_pq, session_id
   end
 
@@ -19,7 +19,7 @@ defmodule MTProto.AuthKey do
      server_public_key_fingerprints: key_fingerprint } = msg
 
     new_nonce = Crypto.rand_bytes(32)
-    req_DH_params = TL.req_DH_params(
+    req_DH_params = Method.req_DH_params(
       nonce,
       server_nonce,
       new_nonce,
@@ -43,7 +43,7 @@ defmodule MTProto.AuthKey do
      {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, session.new_nonce)
 
      ## Decrypt & parse server_DH_params_ok
-     {server_DH_params_ok, _} = TL.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
+     {server_DH_params_ok, _} = Method.server_DH_inner_data encrypted_answer, tmp_aes_key, tmp_aes_iv
 
      %{dh_prime: dh_prime,
       g: g, # g is always equal to 2, 3, 4, 5, 6 or 7
@@ -52,8 +52,12 @@ defmodule MTProto.AuthKey do
       server_nonce: server_nonce,
       server_time: _} = server_DH_params_ok
 
+      # g is always equal to 2, 3, 4, 5, 6 or 7. If not, there was something wrong
+      # decrypting the last incoming message.
+      unless Enum.member?([2,3,4,5,6,7], g), do: raise("server_DH_params_ok : g (#{g}) is none of : 2,3,4,5,6,7")
+
       b = Crypto.rand_bytes(32) # random number
-      set_client_DH_params = TL.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv)
+      set_client_DH_params = Method.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv)
 
       Registry.set :session, session_id, :g_a, g_a
       Registry.set :session, session_id, :b, b
@@ -106,7 +110,7 @@ defmodule MTProto.AuthKey do
     Logger.warn "dh_gen_retry : retry authorization key generation"
 
     # Retry
-    Handler.send_plain MTProto.TL.req_pq, session_id
+    Handler.send_plain Method.req_pq, session_id
   end
 
   # Check + Abort ?

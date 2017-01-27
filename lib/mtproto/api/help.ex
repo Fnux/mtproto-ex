@@ -8,13 +8,13 @@ defmodule MTProto.API.Help do
     Returns info on data centre nearest to the user.
   """
   def get_config do
-    Payload.build("help.getConfig", %{})
+    TL.build("help.getConfig", %{})
   end
 
   @doc """
     Returns current configuration, icluding data center configuration.
   """
   def get_nearest_dc do
-    Payload.build("help.getNearestDc",%{})
+    TL.build("help.getNearestDc",%{})
   end
 end

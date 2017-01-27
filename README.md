@@ -20,7 +20,7 @@ iex> session_id = MTProto.Session.open()
 {:ok, #PID<0.196.0>}
 -791979488906011779
 
-iex> MTProto.Session.send session_id, MTProto.TL.req_pq, :plain
+iex> MTProto.Session.send session_id, MTProto.Method.req_pq, :plain
 19:34:04.905 [debug] 8095676014272936173 : sending plain message.
 19:34:04.939 [debug] 8095676014272936173 : incoming message.
 19:34:04.940 [debug] 8095676014272936173 : received plain message.

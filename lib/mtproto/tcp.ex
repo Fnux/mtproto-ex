@@ -1,4 +1,6 @@
 defmodule MTProto.TCP do
+  require Logger
+
   @moduledoc false
   # Basic wrapper over :gen_tcp
 
@@ -47,7 +49,7 @@ defmodule MTProto.TCP do
      << expected_crc32 :: little-size(4)-unit(8)>> = :binary.part(packet, byte_size(packet), -4)
      real_crc32 = :binary.part(packet, 0, byte_size(packet) -4) |> :erlang.crc32
 
-     if real_crc32 != expected_crc32, do: raise "CRC32 mismatch! Possibly corrupted packet!"
+     if real_crc32 != expected_crc32, do: Logger.error "CRC32 mismatch! Possibly corrupted packet!"
      payload = :binary.part(packet, 2*4, len - 4*3)
 
      payload

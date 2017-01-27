@@ -8,11 +8,10 @@ defmodule MTProto.Payload do
     map = msg |> unwrap(type)
     container = Map.get map, :constructor
     content = Map.get map, :message_content
-
     TL.parse(container, content)
   end
 
-  defp wrap(msg, :plain) do
+  def wrap(msg, :plain) do
     auth_id_key = 0
     msg_id= generate_id()
     msg_len = byte_size(msg)
@@ -21,7 +20,7 @@ defmodule MTProto.Payload do
                                        <> msg
   end
 
-  defp wrap(msg, :encrypted) do
+  def wrap(msg, :encrypted) do
     msg_id = generate_id()
     seq_no = 0 # See the handler
     msg_len = byte_size(msg)
@@ -39,6 +38,7 @@ defmodule MTProto.Payload do
 
     constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:meta32)
     message_content = :binary.part(message_data, 4, message_data_length - 4)
+
     %{
       auth_key_id: auth_key_id,
       message_id: messsage_id,

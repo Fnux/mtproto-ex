@@ -7,16 +7,15 @@ defmodule MTProto.API.Auth do
   alias MTProto.Payload
 
   def check_phone(phone) do
-    Payload.build("auth.checkPhone", %{phone_number: phone})
+    TL.build("auth.checkPhone", %{phone_number: phone})
   end
 
   def send_code(phone, sms_type \\ 0, lang \\ "en") do
-    api_id = Application.get_env(:mtproto, :api_id)
-    api_hash = Application.get_env(:mtproto, :api_hash)
-
-    Payload.build("auth.sendCode",
+    api_id = Application.get_env(:telegram_tl, :api_id)
+    api_hash = Application.get_env(:telegram_tl, :api_hash)
+    TL.build("auth.sendCode",
                   %{phone_number: phone, sms_type: sms_type, api_id: api_id, api_hash: api_hash, lang_code: lang}
-                )
+             )
   end
 
   def send_call(phone_number, phone_code_hash) do

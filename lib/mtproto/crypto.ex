@@ -1,13 +1,13 @@
 defmodule MTProto.Crypto do
   alias TL.Binary
 
-  @key "priv/public.key"
+  @key "public.key"
   @moduledoc false
   # Provide crypto utils related to MTProto.
 
   # Get the components of the server's public key
   def get_key do
-    {_, key} = File.read @key
+    {_, key} = Path.join(:code.priv_dir(:telegram_mt), @key) |> File.read
     [raw] = :public_key.pem_decode key
     {:RSAPublicKey,n,e} = :public_key.pem_entry_decode raw
     {e ,n}

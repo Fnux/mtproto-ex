@@ -5,13 +5,13 @@ defmodule MTProto.Session.Handler do
 
   @moduledoc false
 
-  def start_link(session_id) do
-    GenServer.start_link(__MODULE__, session_id, [])
+  def start_link(session_id, dc_id) do
+    GenServer.start_link(__MODULE__, {session_id, dc_id}, [])
   end
 
   # Initialize the handler
-  def init(session_id) do
-    Registry.set :session, session_id, %Session{handler: self(), dc: 4}
+  def init({session_id, dc_id}) do
+    Registry.set :session, session_id, %Session{handler: self(), dc: dc_id}
 
     {:ok, session_id}
   end

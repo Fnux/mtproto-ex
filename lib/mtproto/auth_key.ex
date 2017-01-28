@@ -1,11 +1,15 @@
 defmodule MTProto.AuthKey do
   require Logger
-  alias MTProto.{Method, Crypto, Registry}
+  alias MTProto.{Method, Crypto, Registry, Session}
   alias MTProto.Session.Handler
   alias TL.Binary
 
   @moduledoc false
   # Process inputs and answers during the generation of the authentification key.
+
+  def generate(session_id) do
+    Session.send session_id, Method.req_pq, :plain
+  end
 
   def req_pq(session_id) do
     req_pq = Method.req_pq

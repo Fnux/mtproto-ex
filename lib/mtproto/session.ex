@@ -4,13 +4,14 @@ defmodule MTProto.Session do
   defstruct handler: nil,
     listener: nil,
     dc: nil,
+    initialized?: false,
     seqno: 0,
     msg_seqno: 0,
     socket: 0
 
-  def open do
+  def open(dc_id) do
     session_id = Crypto.rand_bytes(8)
-    {:ok, _} = MTProto.Session.HandlerSupervisor.pop(session_id)
+    {:ok, _} = MTProto.Session.HandlerSupervisor.pop(session_id, dc_id)
     {:ok, _} = MTProto.Session.ListenerSupervisor.pop(session_id)
     session_id
   end

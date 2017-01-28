@@ -56,7 +56,10 @@ defmodule MTProto do
     API.init_connection(device, system, app, lang, query)
   end
 
-  def sign_in(session) do
-
+  def sign_in(session_id, phone, code_hash, code) do
+    sign_in = API.Auth.sign_in(phone, code_hash, code)
+    sign_in = API.invoke_with_layer(23, sign_in)
+    invoke = API.invoke_with_layer(23, sign_in)
+    Session.send session_id, invoke |> Payload.wrap(:encrypted)
   end
 end

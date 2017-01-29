@@ -47,6 +47,7 @@ defmodule MTProto.Session.Handler do
 
       encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
       Logger.debug "[Handler] #{session_id} : sending encrypted message."
+      IO.inspect Port.info session.socket
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
     else
       {:error, "Auth key does not exist"}

@@ -5,11 +5,12 @@ defmodule MTProto.Session do
     listener: nil,
     dc: nil,
     initialized?: false,
+    client: nil,
     seqno: 0,
     msg_seqno: 0,
     socket: 0
 
-  def open(dc_id) do
+  def open(dc_id, notifier \\ nil) do
     session_id = Crypto.rand_bytes(8)
     {:ok, _} = MTProto.Session.HandlerSupervisor.pop(session_id, dc_id)
     {:ok, _} = MTProto.Session.ListenerSupervisor.pop(session_id)
@@ -26,5 +27,9 @@ defmodule MTProto.Session do
     session = Registry.get :session, session_id
     type = if plain, do: :send_plain, else: :send
     GenServer.call session.handler, {type, message}
+  end
+
+  def set_client(session_id, client) do
+    Registry.set(:session, session_id, :client, client)
   end
 end

@@ -4,6 +4,9 @@ defmodule MTProto.API do
   @TODO
   """
 
+  @doc """
+  @TODO
+  """
   def init_connection(device_model, system_version, app_version, lang, query) do
     api_id = Application.get_env(:telegram_tl, :api_id)
     TL.build("initConnection", %{api_id: api_id,
@@ -15,6 +18,9 @@ defmodule MTProto.API do
                 })
   end
 
+  @doc """
+  @TODO
+  """
   def invoke_with_layer(layer, query) do
     TL.build("invokeWithLayer", %{layer: layer, query: query})
   end

@@ -34,6 +34,11 @@ defmodule MTProto.Session.Brain do
 
   # Process an encrypted message
   def process(message, session_id, :encrypted) do
-    IO.inspect {session_id, message}
+    session = Registry.get :session, session_id
+    if session.client != nil do
+      send session.client, {:telegram_incoming, session_id, message}
+    else
+      IO.inspect {session_id, message}
+    end
   end
 end

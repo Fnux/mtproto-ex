@@ -8,7 +8,8 @@ Well, it's still far from completed.
 
 * Able to compute an Authorization key
 * Able to send/encrypt && receive/decrypt payloads
-* Still working on authentification.
+* Somewhat able to authenticate.
+* Was able to read an incoming message (from another user) in the REPL.
 
 ## Example
 

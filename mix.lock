@@ -1,4 +1,4 @@
 %{"earmark": {:hex, :earmark, "1.0.3", "89bdbaf2aca8bbb5c97d8b3b55c5dd0cff517ecc78d417e87f1d0982e514557b", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.14.5", "c0433c8117e948404d93ca69411dd575ec6be39b47802e81ca8d91017a0cf83c", [:mix], [{:earmark, "~> 1.0", [hex: :earmark, optional: false]}]},
   "json": {:hex, :json, "1.0.0", "4824dadb01e14395f65e9d18da294d534326d7eed77996f3c22f74a9870179eb", [:mix], [{:earmark, ">= 0.0.0", [hex: :earmark, optional: false]}]},
-  "telegram_tl": {:git, "https://github.com/fnux/telegram-tl-elixir.git", "52f9e555ba2f6538fb81d26baaefbf903c7ddeda", []}}
+  "telegram_tl": {:git, "https://github.com/fnux/telegram-tl-elixir.git", "17fe8da4bf6dc4514d16e82dfdaa583e0f11290c", []}}

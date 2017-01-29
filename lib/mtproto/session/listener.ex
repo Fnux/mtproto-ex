@@ -12,6 +12,7 @@ defmodule MTProto.Session.Listener do
 
   # Initialize the listener
   def init({:start, session_id}) do
+    Logger.debug "[Listener] #{session_id} : starting listener."
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
@@ -37,10 +38,9 @@ defmodule MTProto.Session.Listener do
     {status, data} = TCP.recv(session.socket)
 
     if status == :error do
+      Logger.warn "[Listener] #{session_id} : socket closed. Exit."
       Process.exit(self(), :error)
     end
-
-    Logger.debug "[Listener] #{session_id} : incoming message."
 
     # Unwrap
     payload = data |> :binary.list_to_bin
@@ -59,6 +59,8 @@ defmodule MTProto.Session.Listener do
   end
 
   def terminate(reason, session_id) do
+    Logger.debug "[Listener] #{session_id} : terminating listener."
+
     # Get session
     session = Registry.get :session, session_id
 

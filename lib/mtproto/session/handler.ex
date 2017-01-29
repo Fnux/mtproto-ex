@@ -11,6 +11,8 @@ defmodule MTProto.Session.Handler do
 
   # Initialize the handler
   def init({session_id, dc_id}) do
+    Logger.debug "[Handler] #{session_id} : starting handler."
+
     Registry.set :session, session_id, %Session{handler: self(), dc: dc_id}
 
     {:ok, session_id}
@@ -31,7 +33,6 @@ defmodule MTProto.Session.Handler do
   def send_plain(payload, session_id) do
     session = Registry.get :session, session_id
 
-    Logger.debug "[Handler] #{session_id} : sending plain message."
     payload |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
   end
 
@@ -46,8 +47,6 @@ defmodule MTProto.Session.Handler do
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
       encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
-      Logger.debug "[Handler] #{session_id} : sending encrypted message."
-      IO.inspect Port.info session.socket
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
     else
       {:error, "Auth key does not exist"}
@@ -61,19 +60,17 @@ defmodule MTProto.Session.Handler do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
         error = :binary.part(payload, 0, 4) |> TL.deserialize(:meta32)
-        Logger.error "[Handler] #{session_id} : received error #{error}."
+        Logger.warn "[Handler] #{session_id} : received error #{error}."
         Brain.process(%{name: "error", code: error}, session_id, :plain)
       byte_size(payload) >= 8 ->
         auth_key = :binary.part(payload, 0, 8)
 
         # authorization key composed of 8 <<0>> : plain message.
         if auth_key == <<0::8*8>> do
-          Logger.debug("#{session_id} : received plain message.")
           {map, _} = payload |> Payload.parse(:plain)
           Brain.process(map, session_id, :plain)
         else
           # Encrypted message
-          Logger.debug("[Handler] #{session_id} : received encrypted message.")
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
@@ -90,7 +87,7 @@ defmodule MTProto.Session.Handler do
   end
 
   def terminate(reason, state) do
-    Logger.error "[Handler] Session #{Integer.to_string state} is terminating!"
+    Logger.debug "[Handler] #{state} : terminating handler."
     IO.inspect reason
     {:error, state}
   end

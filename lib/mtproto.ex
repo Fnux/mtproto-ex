@@ -79,6 +79,13 @@ defmodule MTProto do
     Session.send session_id, invoke |> Payload.wrap(:encrypted)
   end
 
+  @doc """
+  @TODO
+  """
+  def send(sid, msg) do
+    Session.send sid, msg, :encrypted
+  end
+
   @doc false
   def init_connection_with(lang, query) do
     device = "unknow"

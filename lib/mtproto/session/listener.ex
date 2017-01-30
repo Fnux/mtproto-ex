@@ -16,6 +16,9 @@ defmodule MTProto.Session.Listener do
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
+    Registry.set :session, session_id, :seqno, 0
+    Registry.set :session, session_id, :msg_seqno, 0
+
     # Connect to Telegram's servers
     {:ok, socket} = TCP.connect dc.address, dc.port
 

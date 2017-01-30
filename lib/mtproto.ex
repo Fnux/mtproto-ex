@@ -65,7 +65,14 @@ defmodule MTProto do
   @doc """
     @TODO
   """
-  def sign_in(session_id, phone, code_hash, code) do
+  def sign_in(session_id, phone, code, code_hash \\ nil) do
+    code_hash = if code_hash == nil do
+      session = Registry.get :session, session_id
+      session.phone_code_hash
+    else
+      code_hash
+    end
+
     sign_in = API.Auth.sign_in(phone, code_hash, code)
     sign_in = API.invoke_with_layer(23, sign_in)
     invoke = API.invoke_with_layer(23, sign_in)

@@ -6,6 +6,7 @@ defmodule MTProto.Session do
     dc: nil,
     initialized?: false,
     client: nil,
+    phone_code_hash: nil,
     seqno: 0,
     msg_seqno: 0,
     socket: 0

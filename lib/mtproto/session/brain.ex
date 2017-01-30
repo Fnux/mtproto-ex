@@ -33,12 +33,28 @@ defmodule MTProto.Session.Brain do
   end
 
   # Process an encrypted message
-  def process(message, session_id, :encrypted) do
+  def process(msg, session_id, :encrypted) do
     session = Registry.get :session, session_id
+    name = Map.get(msg, :name)
+
+    # Process RPC
+    if name == "rpc_result" do
+      result = Map.get msg, :result
+      name = result |> Map.get(:name)
+
+      case name do
+        "auth.sentCode" ->
+          hash = Map.get result, :phone_code_hash
+          Registry.set :session, session_id, :phone_code_hash, hash
+          _ -> :noop
+      end
+    end
+
+    # Notify the client
     if session.client != nil do
-      send session.client, {:telegram_incoming, session_id, message}
+      send session.client, {:telegram_incoming, session_id, msg}
     else
-      IO.inspect {session_id, message}
+      IO.inspect {session_id, msg}
     end
   end
 end

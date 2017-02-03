@@ -1,5 +1,4 @@
 defmodule MTProto.API do
-  alias MTProto.Payload
   @moduledoc """
   @TODO
   """

@@ -11,9 +11,10 @@ defmodule MTProto.Session do
     msg_seqno: 0,
     socket: 0
 
-  def open(dc_id, notifier \\ nil) do
+  def open(dc_id, client \\ nil) do
     session_id = Crypto.rand_bytes(8)
     {:ok, _} = MTProto.Session.HandlerSupervisor.pop(session_id, dc_id)
+    set_client(session_id, client)
     {:ok, _} = MTProto.Session.ListenerSupervisor.pop(session_id)
     session_id
   end

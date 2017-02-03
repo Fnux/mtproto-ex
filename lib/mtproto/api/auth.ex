@@ -4,8 +4,6 @@ defmodule MTProto.API.Auth do
   See [core.telegram.org/schema](https://core.telegram.org/schema).
   """
 
-  alias MTProto.Payload
-
   def check_phone(phone) do
     TL.build("auth.checkPhone", %{phone_number: phone})
   end

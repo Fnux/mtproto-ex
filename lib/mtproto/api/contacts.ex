@@ -1,4 +1,7 @@
 defmodule MTProto.API.Contacts do
+  @moduledoc """
+  @TODO
+  """
 
   def get_statuses do
     TL.build "contacts.getStatuses", %{}
@@ -9,7 +12,7 @@ defmodule MTProto.API.Contacts do
   end
 
   def import_contacts(contacts, replace) do
-    Tl.build "contacts.importContacts", %{contacts: contacts, replace: replace}
+    TL.build "contacts.importContacts", %{contacts: contacts, replace: replace}
   end
 
   def delete_contact(id) do

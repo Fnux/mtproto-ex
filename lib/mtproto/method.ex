@@ -1,9 +1,8 @@
 defmodule MTProto.Method do
   alias MTProto.{Payload, Crypto}
 
-  @moduledoc """
-    Implement some TL items.
-  """
+  # Mostly fonctions building payload for MTProto internal's working.
+  @moduledoc false
 
   ###############
   # makeAuthKey #
@@ -129,9 +128,6 @@ defmodule MTProto.Method do
   # Service Messages #
   ####################
 
-  @doc """
-    Build the payload of a ping message.
-  """
   def ping do
     Payload.build("ping", %{ping_id: Crypto.rand_bytes(16)}, :encrypted)
   end

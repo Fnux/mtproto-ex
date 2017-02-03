@@ -1,10 +1,15 @@
 defmodule MTProto.API do
   @moduledoc """
-  @TODO
+  Provides basics methods of Telegram's API. You may want to take a look to
+  the [current TL-schema](https://core.telegram.org/schema).
+
+  *Note :* the latest API layer on Telegram's documentation is API layer 23. A
+  more recent (but undocumented?) schema can be found in [the sources of the
+  official Telegram Desktop client](https://github.com/telegramdesktop/tdesktop/blob/master/Telegram/SourceFiles/mtproto/scheme.tl), currently (Feb. 2017) layer 62.
   """
 
   @doc """
-  @TODO
+  Initializes connection and save information on the user's device and application.
   """
   def init_connection(device_model, system_version, app_version, lang, query) do
     api_id = Application.get_env(:telegram_tl, :api_id)
@@ -18,7 +23,12 @@ defmodule MTProto.API do
   end
 
   @doc """
-  @TODO
+  This method wrap the given `query` telling receiver (Telegram) that we use
+  the API layer number `layer`.
+
+  A layer is a collection of updated methods or constructors in a TL schema.
+  Each layer is numbered with sequentially increasing numbers starting with 2.
+  The first layer is the base layer — the TL schema without any changes.
   """
   def invoke_with_layer(layer, query) do
     TL.build("invokeWithLayer", %{layer: layer, query: query})

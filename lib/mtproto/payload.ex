@@ -1,8 +1,24 @@
 defmodule MTProto.Payload do
+  @moduledoc """
+  Utils to encode/decode and wrap/unwrap payloads.
+
+  Note that a payload has a different structure if it is designed to be send
+  encrypted or not. See [the detailed description of MTProto](https://core.telegram.org/mtproto/description)
+  for more information.
+  """
+
+  @doc """
+  Build and wrap (`type` is either `:plain` or `:encrypted`) a TL object,
+  given its constructor and parameters.
+  """
   def build(method, args, type \\ :encrypted) do
     TL.build(method, args) |> wrap(type)
   end
 
+  @doc """
+  Unwrap ('type' is either `:plain` or `:encrypted`) and parse a message.
+  Returns `{map, tail}`.
+  """
   def parse(msg, type \\ :encrypted) do
     #auth_key_id = :binary.part(msg, 0, 8)
     map = msg |> unwrap(type)
@@ -11,6 +27,9 @@ defmodule MTProto.Payload do
     TL.parse(container, content)
   end
 
+  @doc """
+    Wrap a message as a 'plain' payload.
+  """
   def wrap(msg, :plain) do
     auth_id_key = 0
     msg_id= generate_id()
@@ -20,6 +39,9 @@ defmodule MTProto.Payload do
                                        <> msg
   end
 
+  @doc """
+    Wrap a message as an 'encrypted' payload.
+  """
   def wrap(msg, :encrypted) do
     msg_id = generate_id()
     seq_no = 0 # See the handler
@@ -30,6 +52,9 @@ defmodule MTProto.Payload do
                                   <> msg
   end
 
+  @doc """
+    Unwrap a 'plain' payload.
+  """
   def unwrap(msg, :plain) do
     auth_key_id = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
     messsage_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)
@@ -48,6 +73,9 @@ defmodule MTProto.Payload do
     }
   end
 
+  @doc """
+    Unwrap an 'encrypted' payload.
+  """
   def unwrap(msg, :encrypted) do
     salt = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
     session_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)

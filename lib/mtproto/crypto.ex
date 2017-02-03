@@ -1,9 +1,9 @@
 defmodule MTProto.Crypto do
   alias TL.Binary
 
-  @key "public.key"
-  @moduledoc false
   # Provide crypto utils related to MTProto.
+  @moduledoc false
+  @key "public.key"
 
   # Get the components of the server's public key
   def get_key do

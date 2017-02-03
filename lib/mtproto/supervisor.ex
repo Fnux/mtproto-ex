@@ -1,6 +1,9 @@
 defmodule MTProto.Supervisor do
   use Supervisor
 
+  # Main supervisor. Start the session's registry, the dc's registry and both
+  # the listener and handler supervisors.
+
   @moduledoc false
   @name MTProto.Supervisor
 

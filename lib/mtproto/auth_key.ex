@@ -4,8 +4,9 @@ defmodule MTProto.AuthKey do
   alias MTProto.Session.Handler
   alias TL.Binary
 
-  @moduledoc false
   # Process inputs and answers during the generation of the authentification key.
+  # Those functions are directly called by `MTProto.Session.Brain`.
+  @moduledoc false
 
   def generate(session_id) do
     Session.send session_id, Method.req_pq, :plain

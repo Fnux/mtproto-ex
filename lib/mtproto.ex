@@ -3,7 +3,45 @@ defmodule MTProto do
   alias MTProto.{Registry, DC, Session, AuthKey, API, Payload}
 
   @moduledoc """
-  MTProto implementation for Elixir.
+  MTProto implementation for Elixir. At this time, the project is still far 
+  from complete : **expect things to break**.
+
+  ## Example
+
+  ```
+  » iex -S mix
+
+  Interactive Elixir (1.4.0) - press Ctrl+C to exit (type h() ENTER for help)
+  iex> {:ok, session_id} = MTProto.connect(4) # Connect to DC 4
+  {:ok, 0000000000000000000}
+
+  19:10:07.231 [info]  The authorization key was successfully generated.
+
+  iex> MTProto.send_code(session_id, "0041000000000")
+  No client for 0000000000000000000, printing to console.
+  {0000000000000000000,
+    %{name: "rpc_result", req_msg_id: 0000000000000000000,
+      result: %{is_password: %{name: "boolFalse"}, name: "auth.sentCode",
+        phone_code_hash: "000000000000000000",
+        phone_registered: %{name: "boolTrue"}, send_call_timeout: 120}}}
+
+  iex> MTProto.sign_in(session_id, "0041000000000", "00000")
+  No client for 0000000000000000000, printing to console.
+  {0000000000000000000,
+     %{name: "rpc_result", req_msg_id: 0000000000000000000,
+      result: %{expires: 0000000000, name: "auth.authorization",
+        user: %{first_name: "XXXX", id: 000000000, inactive: %{name: "boolFalse"},
+          last_name: "", name: "userSelf", phone: "41000000000",
+          photo: %{name: "userProfilePhoto",
+            photo_big: %{dc_id: 4, local_id: 00000, name: "fileLocation",
+              secret: 0000000000000000000, volume_id: 000000000},
+            photo_id: 000000000000000000,
+            photo_small: %{dc_id: 4, local_id: 00000, name: "fileLocation",
+              secret: 0000000000000000000, volume_id: 000000000}},
+          status: %{name: "userStatusOffline", was_online: 0000000000},
+          username: "xxxxxxx"}}}}
+```
+
   """
 
   @doc """
@@ -14,11 +52,7 @@ defmodule MTProto do
     out = MTProto.Supervisor.start_link
 
     # Register DCs
-    Registry.set :dc, 1, %DC{id: 1, address: "149.154.175.50"}
-    Registry.set :dc, 2, %DC{id: 2, address: "149.154.167.51"}
-    Registry.set :dc, 3, %DC{id: 3, address: "149.154.175.100"}
-    Registry.set :dc, 4, %DC{id: 4, address: "149.154.167.91"}
-    Registry.set :dc, 5, %DC{id: 5, address: "149.154.171.5"}
+    DC.register
 
     out
   end
@@ -53,8 +87,9 @@ defmodule MTProto do
     session = Registry.get(:session, session_id)
     send_code = API.Auth.send_code(phone)
     msg = unless session.initialized? do
+      api_layer = TL.Schema.api_layer_version
       init_connection = init_connection_with("en", send_code)
-      API.invoke_with_layer(23, init_connection)
+      API.invoke_with_layer(api_layer, init_connection)
     else
       send_code
     end
@@ -63,24 +98,30 @@ defmodule MTProto do
   end
 
   @doc """
-    @TODO
+    Sign in given the phone number and the code received from Telegram (by SMS,
+    call, or via an open client). `phone_code_hash` is returned in the response
+    to `MTProto.send_code/2`and is stored in the session. You don't need to
+    provide it, but you can override the `phone_code_hash` stored in the
+    session by providing it here.
   """
-  def sign_in(session_id, phone, code, code_hash \\ nil) do
-    code_hash = if code_hash == nil do
+  def sign_in(session_id, phone, code, code_hash \\ :session) do
+    code_hash = if code_hash == :session do
       session = Registry.get :session, session_id
       session.phone_code_hash
     else
       code_hash
     end
 
+    api_layer = TL.Schema.api_layer_version
     sign_in = API.Auth.sign_in(phone, code_hash, code)
-    sign_in = API.invoke_with_layer(23, sign_in)
-    invoke = API.invoke_with_layer(23, sign_in)
+    sign_in = API.invoke_with_layer(api_layer, sign_in)
+    invoke = API.invoke_with_layer(api_layer, sign_in)
     Session.send session_id, invoke |> Payload.wrap(:encrypted)
   end
 
   @doc """
-  @TODO
+    Send an encrypted message to Telegram on the session `sid`. Similar (alias)
+    to `MTProto.Session.send(sid, msg, :encrypted)`.
   """
   def send(sid, msg) do
     Session.send sid, msg, :encrypted

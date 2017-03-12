@@ -49,6 +49,14 @@ defmodule MTProto do
     Automatically started.
   """
   def start(_type, _args) do
+    # Ensure API_ID and API_HASH are set in the config
+    api_id = Application.get_env(:telegram_tl, :api_id)
+    api_hash = Application.get_env(:telegram_tl, :api_hash)
+
+    if api_id == nil, do: Logger.error "API_ID is not set !"
+    if api_hash == nil, do: Logger.error "API_HASH is not set !"
+
+    # Start
     out = MTProto.Supervisor.start_link
 
     # Register DCs

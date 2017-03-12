@@ -43,6 +43,7 @@ defmodule MTProto.Session.Handler do
     if dc.auth_key != <<0::8*8>> && dc.auth_key != nil do
       # Set the msg_seqno
       msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:meta32)
+      Registry.set(:session, session_id, :msg_seqno, session.msg_seqno * 2 + 1)
       payload = :binary.part(payload, 0, 8) <> msg_seqno
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
@@ -74,8 +75,8 @@ defmodule MTProto.Session.Handler do
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:meta32)
-          Registry.set(:session, session_id, :msg_seqno, msg_seqno)
+          #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:meta32)
+          #Registry.set(:session, session_id, :msg_seqno, msg_seqno)
           {map, _} = decrypted |> Payload.parse(:encrypted)
           Brain.process(map, session_id, :encrypted)
         end

@@ -32,7 +32,7 @@ defmodule MTProto.Payload do
   """
   def wrap(msg, :plain) do
     auth_id_key = 0
-    msg_id= generate_id()
+    msg_id =  generate_id()
     msg_len = byte_size(msg)
     TL.serialize(auth_id_key, :meta64) <> TL.serialize(msg_id, :meta64)
                                        <> TL.serialize(msg_len, :meta32)

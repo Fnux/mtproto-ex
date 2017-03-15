@@ -8,8 +8,8 @@ Well, it's still far from completed.
 
 * Able to compute an Authorization key
 * Able to send/encrypt && receive/decrypt payloads
-* Somewhat able to authenticate.
-* Was able to read an incoming message (from another user) in the REPL.
+* Able to authenticate.
+* Able to read incoming messages.
 
 ## Example
 

@@ -34,6 +34,9 @@ defmodule MTProto.Session.Handler do
     session = Registry.get :session, session_id
 
     payload |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
+
+    # Update the sequence number
+    Registry.set :session, session_id, :seqno, session.seqno + 1
   end
 
   def send_encrypted(payload, session_id) do
@@ -42,13 +45,18 @@ defmodule MTProto.Session.Handler do
 
     if dc.auth_key != <<0::8*8>> && dc.auth_key != nil do
       # Set the msg_seqno
-      msg_seqno = (session.msg_seqno * 2 + 1) |> TL.serialize(:meta32)
-      Registry.set(:session, session_id, :msg_seqno, session.msg_seqno * 2 + 1)
+      msg_seqno = (session.msg_seqno * 2 + 1)
+      msg_seqno = msg_seqno |> TL.serialize(:int)
+
       payload = :binary.part(payload, 0, 8) <> msg_seqno
                                             <> :binary.part(payload, 12, byte_size(payload) - 12)
 
       encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
+
+      # Update the sequence numbers
+      Registry.set(:session, session_id, :msg_seqno, session.msg_seqno + 1)
+      Registry.set :session, session_id, :seqno, session.seqno + 1
     else
       {:error, "Auth key does not exist"}
     end
@@ -75,8 +83,13 @@ defmodule MTProto.Session.Handler do
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:meta32)
-          #Registry.set(:session, session_id, :msg_seqno, msg_seqno)
+#          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
+#          msg_seqno = round(msg_seqno/2)
+#          Logger.debug "[RECEIVED] Message sequence number : #{msg_seqno}"
+#          if session.msg_seqno <  msg_seqno do
+#            Logger.warn "[MSG_SEQNO] Override local #{session.msg_seqno} with #{msg_seqno}"
+#            Registry.set(:session, session_id, :msg_seqno, msg_seqno)
+#          end
           {map, _} = decrypted |> Payload.parse(:encrypted)
           Brain.process(map, session_id, :encrypted)
         end
@@ -89,7 +102,6 @@ defmodule MTProto.Session.Handler do
 
   def terminate(reason, state) do
     Logger.debug "[Handler] #{state} : terminating handler."
-    IO.inspect reason
     {:error, state}
   end
 end

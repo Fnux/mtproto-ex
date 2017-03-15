@@ -52,9 +52,6 @@ defmodule MTProto.Session.Listener do
     # Dispatch to the related handler
     send session.handler, {:recv, payload}
 
-    # Update the sequence number
-    Registry.set :session, session_id, :seqno, session.seqno + 1
-
     # Loop
     send self(), :listen
 

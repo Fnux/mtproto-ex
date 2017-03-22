@@ -11,6 +11,17 @@ Well, it's still far from completed.
 * Able to authenticate.
 * Able to read incoming messages.
 
+## Relaese alpha v0.0.1 : Roadmap
+
+* [*] Basic `mtproto` implementation
+* [*] Authorization key computation
+* [*] Authentification
+* [] Basic usage
+  * [*] Receive messages
+  * [] Fetch contacts - WIP
+  * [] Send messages
+* [] Proper documentation - WIP
+
 ## Example
 
 ```

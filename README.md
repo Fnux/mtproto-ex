@@ -13,11 +13,11 @@ Well, it's still far from completed.
 
 ## Release alpha v0.0.1 : Roadmap
 
-* [ X ] Basic `mtproto` implementation
-* [ X ] Authorization key computation
-* [ X ] Authentification
+* [x] Basic `mtproto` implementation
+* [x] Authorization key computation
+* [x] Authentification
 * [ ] Basic usage
-  * [ x ] Receive messages
+  * [x] Receive messages
   * [ ] Fetch contacts - WIP
   * [ ] Send messages
 * [ ] Proper documentation - WIP

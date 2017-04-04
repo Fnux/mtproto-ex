@@ -1,15 +1,22 @@
 # MTProto-ex
 
-The aim of this project is to implement [MTProto](https://core.telegram.org/mtproto) (Telegram) in elixir.
+The aim of this project is to implement
+[MTProto](https://core.telegram.org/mtproto)(Telegram) in elixir. It's still in
+alpha, expect things to break.
 
-Well, it's still far from completed.
+Oh, and it's my fisrt 'real' elixir project so it's probably awful.
 
-## Actual state
+## How it work ?
 
-* Able to compute an Authorization key
-* Able to send/encrypt && receive/decrypt payloads
-* Able to authenticate.
-* Able to read incoming messages.
+I originally created this project in order to create bridges between Telegram and
+other services (IRC, Matrix, ... ?). Hence, it must be able to handle multiple
+users at the same time.
+
+![observer](observer.png "Observer - 1 session") *Observer - 1 session*.
+
+Each session has one listener and one handler (they are registered in the
+`session` registry). The `dc` registry saves the data related to each specific DC
+(Telegram uses 5 DCs) such as the address or the authorization key.
 
 ## Release alpha v0.0.1 : Roadmap
 
@@ -21,7 +28,7 @@ Well, it's still far from completed.
   * [ ] Fetch contacts - WIP
   * [x] Get contact statuses
   * [ ] Send messages
-* [ ] Proper documentation - WIP
+* [ ] Basic documentation - WIP
 
 ## Example
 

@@ -33,6 +33,7 @@ defmodule MTProto.API.Messages do
   end
 
   @doc """
+  `:not_yet_implemented`
   Sends a current user typing event to a conversation partner or group.
 
   * ``
@@ -42,6 +43,9 @@ defmodule MTProto.API.Messages do
   def set_typing do
   end
 
+  @doc """
+  `:not_yet_implemented`
+  """
   def get_messages do
   end
 
@@ -59,33 +63,63 @@ defmodule MTProto.API.Messages do
                                       limit: limit}
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def get_history do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def search do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def read_history do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def read_message_contents do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def delete_history do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def delete_messages do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def received_messages do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def forward_message do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def forward_messages do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def send_broadcast do
   end
 
@@ -93,25 +127,45 @@ defmodule MTProto.API.Messages do
   # Chats #
   # ##### #
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def get_chats do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def get_full_chat do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def edit_chat_title do
-
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def echot_chat_photo do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def add_chat_user do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def delete_chat_user do
   end
 
+  @doc """
+    `:not_yet_implemented`
+  """
   def create_chat do
   end
 end

@@ -18,7 +18,7 @@ defmodule MTProto.Session.HandlerSupervisor do
   end
 
   def pop(session_id, dc_id) do
-    IO.inspect Supervisor.start_child(@name, [session_id, dc_id])
+    Supervisor.start_child(@name, [session_id, dc_id])
   end
 
   def drop(session_id) do

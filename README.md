@@ -2,7 +2,8 @@
 
 The aim of this project is to implement
 [MTProto](https://core.telegram.org/mtproto)(Telegram) in elixir. It's still in
-alpha, expect things to break.
+alpha, expect things to break. You may want to take a look at
+[this example](https://github.com/Fnux/telegram-client-elixir-demo).
 
 Oh, and it's my fisrt 'real' elixir project so it's probably awful.
 

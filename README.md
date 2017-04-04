@@ -19,6 +19,7 @@ Well, it's still far from completed.
 * [ ] Basic usage
   * [x] Receive messages
   * [ ] Fetch contacts - WIP
+  * [x] Get contact statuses
   * [ ] Send messages
 * [ ] Proper documentation - WIP
 

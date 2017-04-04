@@ -25,10 +25,10 @@ Each session has one listener and one handler (they are registered in the
 * [x] Authentification
 * [ ] Basic usage
   * [x] Receive messages
-  * [ ] Fetch contacts - WIP
-  * [x] Get contact statuses
-  * [ ] Send messages
-* [ ] Basic documentation - WIP
+  * [ ] Fetch contacts informations (= name)
+  * [x] Get contact/statuses
+  * [x] Send messages
+* [ ] Basic documentation
 
 ## Example
 

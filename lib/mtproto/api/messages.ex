@@ -14,10 +14,15 @@ defmodule MTProto.API.Messages do
   * `message` - message text.
   * `random_id` - unique client message ID required to prevent message resending.
   """
-  def send_message(peer, message, random_id) do
+  def send_message(inputPeer, message) do
+    random_id = MTProto.Crypto.rand_bytes(8)
+    TL.build "messages.sendMessage", %{peer: inputPeer,
+                                       message: message,
+                                       random_id: random_id}
   end
 
   @doc """
+  `:not_yet_implemented`
   Sends a non-text message.
 
   * `` - user or group to receive the message.

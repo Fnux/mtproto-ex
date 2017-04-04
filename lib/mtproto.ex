@@ -131,8 +131,27 @@ defmodule MTProto do
     Send an encrypted message to Telegram on the session `sid`. Similar (alias)
     to `MTProto.Session.send(sid, msg, :encrypted)`.
   """
-  def send(sid, msg) do
-    Session.send sid, msg, :encrypted
+  def send(session_id, msg) do
+    Session.send session_id, msg, :encrypted
+  end
+
+  @doc """
+    Send a text message to an user/group.
+
+    * `session_id`
+    * `dst_id` - ID (integer) of the recipient of the message
+    * `content` - content of the message (string)
+    * `type` - type of the recipient, either an user (`:contact`) or
+    a group (:chat`)
+  """
+  def send_message(session_id, dst_id, content, type \\ :contact) do
+    peer = case type do
+      :chat -> TL.build "inputPeerChat", %{chat_id: dst_id}
+      _ -> TL.build "inputPeerContact", %{user_id: dst_id}
+    end
+
+    msg = API.Messages.send_message(peer, content)
+    Session.send session_id, msg |> Payload.wrap(:encrypted)
   end
 
   @doc false

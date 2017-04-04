@@ -94,7 +94,7 @@ defmodule MTProto.Session.Handler do
           Brain.process(map, session_id, :encrypted)
         end
       true ->
-        Logger.error "[Handler] #{session_id} : received unknow message."
+        Logger.debug "[Handler] #{session_id} : received unknow message."
     end
 
     {:noreply, session_id}

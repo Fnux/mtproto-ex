@@ -20,7 +20,7 @@ defmodule MTProto.Session.Brain do
           session = Registry.get(:session, session_id)
           dc = Registry.get(:dc, session.dc)
           if dc.auth_key == <<0::8*8>> do
-            Logger.info "[Brain] I received a -404 error. I still don't have an auth key
+            Logger.debug "[Brain] I received a -404 error. I still don't have an auth key
             for this DC (#{dc.id}). Generating authorization key."
             AuthKey.req_pq(session_id)
           else
@@ -28,7 +28,7 @@ defmodule MTProto.Session.Brain do
           end
         end
       _ ->
-        Logger.warn "[Brain] #{session_id} : received an unknow predicate #{name}."
+        Logger.debug "[Brain] #{session_id} : received an unknow predicate #{name}."
     end
   end
 

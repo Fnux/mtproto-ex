@@ -79,7 +79,7 @@ defmodule MTProto do
     dc = Registry.get(:dc, dc_id)
 
     if dc.auth_key == <<0::8*8>> do
-      Logger.info "No authorization key found for DC #{dc_id}. Requesting..."
+      Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
       AuthKey.generate(session_id)
     end
 

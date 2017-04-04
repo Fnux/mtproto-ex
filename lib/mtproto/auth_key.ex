@@ -101,7 +101,8 @@ defmodule MTProto.AuthKey do
 
     Registry.drop :session, session_id, [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
 
-    Logger.info "The authorization key was successfully generated."
+    Logger.debug "The authorization key was successfully generated."
+    # Send notification to the client ?
   end
 
   # Check + Retry ?
@@ -112,7 +113,7 @@ defmodule MTProto.AuthKey do
     %{new_nonce_hash2: new_nonce_hash2} = msg
     check_dh_hash(auth_key, session.new_nonce, new_nonce_hash2, 2)
 
-    Logger.warn "dh_gen_retry : retry authorization key generation"
+    Logger.debug "dh_gen_retry : retry authorization key generation"
 
     # Retry
     Handler.send_plain Method.req_pq, session_id

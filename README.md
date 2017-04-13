@@ -30,6 +30,7 @@ Each session has one listener and one handler (they are registered in the
   * [x] Get contact/statuses
   * [x] Send messages
 * [ ] Basic documentation
+* [ ] Fix [issue #2](https://github.com/Fnux/telegram-mt-elixir/issues/2)(msg_seqno)
 
 ## Example
 

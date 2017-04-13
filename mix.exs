@@ -4,7 +4,7 @@ defmodule MTProto.Mixfile do
   def project do
     [app: :telegram_mt,
      version: "0.0.1-alpha",
-     elixir: "~> 1.3",
+     elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
      deps: deps(),
@@ -34,6 +34,6 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:json, "~> 1.0.0"}, {:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, github: "fnux/telegram-tl-elixir"}]
+    [{:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, github: "fnux/telegram-tl-elixir"}]
   end
 end

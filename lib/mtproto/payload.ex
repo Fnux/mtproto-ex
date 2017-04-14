@@ -11,8 +11,8 @@ defmodule MTProto.Payload do
   Build and wrap (`type` is either `:plain` or `:encrypted`) a TL object,
   given its constructor and parameters.
   """
-  def build(method, args, type \\ :encrypted) do
-    TL.build(method, args) |> wrap(type)
+  def build(method, args) do
+    TL.build(method, args)
   end
 
   @doc """
@@ -32,7 +32,7 @@ defmodule MTProto.Payload do
   @doc """
     Wrap a message as a 'plain' payload.
   """
-  def wrap(msg, :plain) do
+  def wrap(msg) do
     auth_id_key = 0
     msg_id =  generate_id()
     msg_len = byte_size(msg)
@@ -44,12 +44,9 @@ defmodule MTProto.Payload do
   @doc """
     Wrap a message as an 'encrypted' payload.
   """
-  def wrap(msg, :encrypted) do
-    msg_id = generate_id()
-    seq_no = 0 # See the handler
+  def wrap(msg, msg_id, msg_seqno) do
     msg_len = byte_size(msg)
-
-    TL.serialize(msg_id, :meta64) <> TL.serialize(seq_no, :meta32)
+    TL.serialize(msg_id, :meta64) <> TL.serialize(msg_seqno, :meta32)
                                   <> TL.serialize(msg_len, :meta32)
                                   <> msg
   end

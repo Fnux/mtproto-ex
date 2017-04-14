@@ -102,7 +102,7 @@ defmodule MTProto do
       send_code
     end
 
-    Session.send session_id, msg |> Payload.wrap(:encrypted)
+    Session.send session_id, msg
   end
 
   @doc """
@@ -124,7 +124,7 @@ defmodule MTProto do
     sign_in = API.Auth.sign_in(phone, code_hash, code)
     sign_in = API.invoke_with_layer(api_layer, sign_in)
     invoke = API.invoke_with_layer(api_layer, sign_in)
-    Session.send session_id, invoke |> Payload.wrap(:encrypted)
+    Session.send session_id, invoke
   end
 
   @doc """
@@ -151,7 +151,7 @@ defmodule MTProto do
     end
 
     msg = API.Messages.send_message(peer, content)
-    Session.send session_id, msg |> Payload.wrap(:encrypted)
+    Session.send session_id, msg
   end
 
   @doc false

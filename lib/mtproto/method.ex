@@ -11,7 +11,7 @@ defmodule MTProto.Method do
   # Build the payload for req_pq
   def req_pq do
     nonce = Crypto.rand_bytes(16)
-    Payload.build("req_pq", %{nonce: nonce}, :plain)
+    Payload.build("req_pq", %{nonce: nonce})
   end
 
   # Build the payload for req_DH_params
@@ -39,8 +39,7 @@ defmodule MTProto.Method do
                   p: p,
                   q: q,
                   public_key_fingerprint: f,
-                  encrypted_data: encrypted_data},
-    :plain)
+                  encrypted_data: encrypted_data})
   end
 
   # Build & encrypt p_q_inner_data (will be included in req_DH_params' payload)
@@ -91,7 +90,7 @@ defmodule MTProto.Method do
     encrypted_data = client_DH_inner_data nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv
 
     Payload.build("set_client_DH_params", %{nonce: nonce,
-                  server_nonce: server_nonce, encrypted_data: encrypted_data}, :plain)
+                  server_nonce: server_nonce, encrypted_data: encrypted_data})
   end
 
   # Build & encrypt client_DH_inner_data (will be included in set_client_DH_params' payload)
@@ -129,10 +128,10 @@ defmodule MTProto.Method do
   ####################
 
   def ping do
-    Payload.build("ping", %{ping_id: Crypto.rand_bytes(16)}, :encrypted)
+    Payload.build("ping", %{ping_id: Crypto.rand_bytes(16)})
   end
 
   def msgs_ack(ids) do
-    Payload.build("msgs_ack", %{msg_ids: ids}, :encrypted)
+    Payload.build("msgs_ack", %{msg_ids: ids})
   end
 end

@@ -31,6 +31,7 @@ defmodule MTProto.Session do
     initialized?: false,
     client: nil,
     phone_code_hash: nil,
+    last_msg_id: 0,
     seqno: 0,
     msg_seqno: 0,
     socket: 0

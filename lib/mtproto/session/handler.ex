@@ -33,7 +33,7 @@ defmodule MTProto.Session.Handler do
   def send_plain(payload, session_id) do
     session = Registry.get :session, session_id
 
-    payload |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
+    payload |> Payload.wrap |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
     # Update the sequence number
     Registry.set :session, session_id, :seqno, session.seqno + 1
@@ -43,14 +43,12 @@ defmodule MTProto.Session.Handler do
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
+    # Wrap as encrypted message
+    msg_id = Payload.generate_id()
+    msg_seqno = (session.msg_seqno * 2 + 1)
+    payload = Payload.wrap(payload, msg_id, msg_seqno)
+
     if dc.auth_key != <<0::8*8>> && dc.auth_key != nil do
-      # Set the msg_seqno
-      msg_seqno = (session.msg_seqno * 2 + 1)
-      msg_seqno = msg_seqno |> TL.serialize(:int)
-
-      payload = :binary.part(payload, 0, 8) <> msg_seqno
-                                            <> :binary.part(payload, 12, byte_size(payload) - 12)
-
       encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
@@ -83,14 +81,12 @@ defmodule MTProto.Session.Handler do
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-#          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
-#          msg_seqno = round(msg_seqno/2)
-#          Logger.debug "[RECEIVED] Message sequence number : #{msg_seqno}"
-#          if session.msg_seqno <  msg_seqno do
-#            Logger.warn "[MSG_SEQNO] Override local #{session.msg_seqno} with #{msg_seqno}"
-#            Registry.set(:session, session_id, :msg_seqno, msg_seqno)
-#          end
+          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
+
           {map, _} = decrypted |> Payload.parse(:encrypted)
+          msg_id = Map.get map, :msg_id
+          Registry.set :session, session_id, :last_msg_id, msg_id
+
           Brain.process(map, session_id, :encrypted)
         end
       true ->

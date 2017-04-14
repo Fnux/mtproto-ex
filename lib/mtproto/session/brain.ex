@@ -1,6 +1,7 @@
 defmodule MTProto.Session.Brain do
   require Logger
   alias MTProto.{AuthKey, Registry}
+  alias MTProto.Session.Handler
 
   @moduledoc false
 
@@ -48,6 +49,11 @@ defmodule MTProto.Session.Brain do
           Registry.set :session, session_id, :phone_code_hash, hash
           _ -> :noop
       end
+
+      # ACK
+      msg_ids = [Map.get(msg, :msg_id)]
+      ack = MTProto.Method.msgs_ack(msg_ids)
+      Handler.send_encrypted(ack, session_id)
     end
 
     # Notify the client

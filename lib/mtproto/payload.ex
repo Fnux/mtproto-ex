@@ -24,7 +24,9 @@ defmodule MTProto.Payload do
     map = msg |> unwrap(type)
     container = Map.get map, :constructor
     content = Map.get map, :message_content
-    TL.parse(container, content)
+    message_id = Map.get map, :message_id
+    {map, tail} = TL.parse(container, content)
+    {Map.put(map, :msg_id, message_id), tail}
   end
 
   @doc """

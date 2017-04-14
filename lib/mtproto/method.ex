@@ -131,4 +131,8 @@ defmodule MTProto.Method do
   def ping do
     Payload.build("ping", %{ping_id: Crypto.rand_bytes(16)}, :encrypted)
   end
+
+  def msgs_ack(ids) do
+    Payload.build("msgs_ack", %{msg_ids: ids}, :encrypted)
+  end
 end

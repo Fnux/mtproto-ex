@@ -100,7 +100,7 @@ defmodule MTProto.Session.Handler do
     {:noreply, session_id}
   end
 
-  def terminate(reason, state) do
+  def terminate(_reason, state) do
     Logger.debug "[Handler] #{state} : terminating handler."
     {:error, state}
   end

@@ -16,7 +16,7 @@ users at the same time.
 ![observer](observer.png "Observer - 1 session") *Observer - 1 session*.
 
 Each session has one listener and one handler (they are registered in the
-`session` registry). The `dc` registry saves the data related to each specific DC
+`:session` registry). The `:dc` registry saves the data related to each specific DC
 (Telegram uses 5 DCs) such as the address or the authorization key.
 
 ## Release alpha v0.0.1 : Roadmap
@@ -30,7 +30,10 @@ Each session has one listener and one handler (they are registered in the
   * [x] Get contact/statuses
   * [x] Send messages
 * [ ] Basic documentation
-* [ ] Fix [issue #2](https://github.com/Fnux/telegram-mt-elixir/issues/2)(msg_seqno)
+* [ ] Fix [issue #1](https://github.com/Fnux/telegram-mt-elixir/issues/1)
+ (computation of the authorization key)
+* [ ] Fix [issue #2](https://github.com/Fnux/telegram-mt-elixir/issues/2)
+ (msg_seqno)
 
 ## Example
 

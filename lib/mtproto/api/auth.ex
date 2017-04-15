@@ -33,26 +33,26 @@ defmodule MTProto.API.Auth do
   )
   end
 
-  @doc """
-  Makes a voice call to the passed phone number. A robot will repeat the confirmation code from a previously sent SMS message.
-  """
-  def send_call(phone_number, phone_code_hash) do
-    TL.build("auth.sendCall", 
-             %{phone_number: phone_number,phone_code_hash: phone_code_hash}
-           )
-  end
-
-  @doc """
-  Registers a validated phone number in the system.
-  """
-  def sign_up(phone_number, phone_code_hash, phone_code, first_name, last_name) do
-    TL.build("auth.signUp",
-             %{phone_number: phone_number,
-               phone_code_hash: phone_code_hash,
-               phone_code: phone_code,
-               first_name: first_name,
-               last_name: last_name})
-  end
+#  @doc """
+#  Makes a voice call to the passed phone number. A robot will repeat the confirmation code from a previously sent SMS message.
+#  """
+#  def send_call(phone_number, phone_code_hash) do
+#    TL.build("auth.sendCall", 
+#             %{phone_number: phone_number,phone_code_hash: phone_code_hash}
+#           )
+#  end
+#
+#  @doc """
+#  Registers a validated phone number in the system.
+#  """
+#  def sign_up(phone_number, phone_code_hash, phone_code, first_name, last_name) do
+#    TL.build("auth.signUp",
+#             %{phone_number: phone_number,
+#               phone_code_hash: phone_code_hash,
+#               phone_code: phone_code,
+#               first_name: first_name,
+#               last_name: last_name})
+#  end
 
   @doc """
   Signs in a user with a validated phone number.
@@ -71,52 +71,52 @@ defmodule MTProto.API.Auth do
     TL.build("auth.logOut", %{})
   end
 
-  @doc """
-  Terminates all user's authorized sessions except for the current one.
-  """
-  def reset_authorizations do
-    TL.build("auth.resetAuthorizations", %{})
-  end
-
-  @doc """
-  Saves information that the current user sent SMS-messages with invitations to its unregistered contacts.
-  """
-  def send_invites(phone_numbers, message) do
-    TL.build("auth.sendInvites", %{phone_numbers: phone_numbers, message: message})
-  end
-
-  @doc """
-  Returns data for copying authorization to another data-centre.
-  """
-  def export_authorization(dc_id) do
-    TL.build("auth.exportAuthorization", %{dc_id: dc_id})
-  end
-
-  @doc """
-  Logs in a user using a key transmitted from his native data-centre.
-  """
-  def import_authorization(user_id, auth_key) do
-    TL.build("auth.importAuthorization", %{id: user_id, bytes: auth_key})
-  end
-
-  @doc """
-  Binds a temporary authorization key `temp_auth_key_id` to the permanent
-  authorization key `perm_auth_key_id`. Each permanent key may only be bound
-  to one temporary key at a time, binding a new temporary key overwrites
-  the previous one.
-  """
-  def bind_tmp_auth_key(perm_auth_key_id, nonce, expires_at, encrypted_message) do
-    TL.build("auth.bindTempAuthKey",
-                  %{perm_auth_key_id: perm_auth_key_id,
-                   nonce: nonce,
-                   expires_at: expires_at,
-                   encrypted_message: encrypted_message})
-  end
-
-  @doc """
-  Forces sending an SMS message to the specified phone number.
-  """
-  def send_sms(phone_number, phone_code_hash) do
-    TL.build("auth.sendSms", %{phone_number: phone_number, phone_code_hash: phone_code_hash})
-  end
+#  @doc """
+#  Terminates all user's authorized sessions except for the current one.
+#  """
+#  def reset_authorizations do
+#    TL.build("auth.resetAuthorizations", %{})
+#  end
+#
+#  @doc """
+#  Saves information that the current user sent SMS-messages with invitations to its unregistered contacts.
+#  """
+#  def send_invites(phone_numbers, message) do
+#    TL.build("auth.sendInvites", %{phone_numbers: phone_numbers, message: message})
+#  end
+#
+#  @doc """
+#  Returns data for copying authorization to another data-centre.
+#  """
+#  def export_authorization(dc_id) do
+#    TL.build("auth.exportAuthorization", %{dc_id: dc_id})
+#  end
+#
+#  @doc """
+#  Logs in a user using a key transmitted from his native data-centre.
+#  """
+#  def import_authorization(user_id, auth_key) do
+#    TL.build("auth.importAuthorization", %{id: user_id, bytes: auth_key})
+#  end
+#
+#  @doc """
+#  Binds a temporary authorization key `temp_auth_key_id` to the permanent
+#  authorization key `perm_auth_key_id`. Each permanent key may only be bound
+#  to one temporary key at a time, binding a new temporary key overwrites
+#  the previous one.
+#  """
+#  def bind_tmp_auth_key(perm_auth_key_id, nonce, expires_at, encrypted_message) do
+#    TL.build("auth.bindTempAuthKey",
+#                  %{perm_auth_key_id: perm_auth_key_id,
+#                   nonce: nonce,
+#                   expires_at: expires_at,
+#                   encrypted_message: encrypted_message})
+#  end
+#
+#  @doc """
+#  Forces sending an SMS message to the specified phone number.
+#  """
+#  def send_sms(phone_number, phone_code_hash) do
+#    TL.build("auth.sendSms", %{phone_number: phone_number, phone_code_hash: phone_code_hash})
+#  end
 end

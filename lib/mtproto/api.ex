@@ -5,7 +5,8 @@ defmodule MTProto.API do
 
   *Note :* the latest API layer on Telegram's documentation is API layer 23. A
   more recent (but undocumented?) schema can be found in [the sources of the
-  official Telegram Desktop client](https://github.com/telegramdesktop/tdesktop/blob/master/Telegram/SourceFiles/mtproto/scheme.tl), currently (Feb. 2017) layer 62.
+  official Telegram Desktop client](https://github.com/telegramdesktop/tdesktop/blob/7b7b9db20bcdf6c8d9e81d8d77f4af3bd50961cd/Telegram/Resources/scheme.tl)
+  , currently (Apr. 2017) layer 66.
   """
 
   @doc """

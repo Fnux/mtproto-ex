@@ -2,7 +2,7 @@ defmodule MTProto.Session do
   alias MTProto.{Crypto, Registry}
 
   @moduledoc """
-  Provide total control over sessions.
+  Provide advanced control over sessions.
 
   ## Session
 
@@ -73,7 +73,7 @@ defmodule MTProto.Session do
 
   @doc """
   Set the PID (`client`) of the process to be notified when receiving new 
-  messages on sesseion `session_id`.
+  messages on session `session_id`.
   """
   def set_client(session_id, client) do
     Registry.set(:session, session_id, :client, client)

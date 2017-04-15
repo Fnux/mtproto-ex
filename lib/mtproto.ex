@@ -1,47 +1,45 @@
 defmodule MTProto do
   require Logger
-  alias MTProto.{Registry, DC, Session, AuthKey, API, Payload}
+  alias MTProto.{Registry, DC, Session, AuthKey, API}
 
   @moduledoc """
-  MTProto implementation for Elixir. At this time, the project is still far 
+  MTProto implementation for Elixir. At this time, the project is still far
   from complete : **expect things to break**.
 
-  ## Example
+  #### Other resources
 
-  ```
-  » iex -S mix
+  A demo client is avaible
+  on [github](https://github.com/Fnux/telegram-client-elixir-demo).
+  You may also want to take a look to the
+  [README](https://github.com/Fnux/telegram-mt-elixir) page of the project,
+  where you can find more detailed informations and examples.
 
-  Interactive Elixir (1.4.0) - press Ctrl+C to exit (type h() ENTER for help)
-  iex> {:ok, session_id} = MTProto.connect(4) # Connect to DC 4
-  {:ok, 0000000000000000000}
 
-  19:10:07.231 [info]  The authorization key was successfully generated.
+  #### Overview
 
-  iex> MTProto.send_code(session_id, "0041000000000")
-  No client for 0000000000000000000, printing to console.
-  {0000000000000000000,
-    %{name: "rpc_result", req_msg_id: 0000000000000000000,
-      result: %{is_password: %{name: "boolFalse"}, name: "auth.sentCode",
-        phone_code_hash: "000000000000000000",
-        phone_registered: %{name: "boolTrue"}, send_call_timeout: 120}}}
+  This library allows you to handle mutiple users, which is fondamental since
+  it was originally designed in order to build bridges between Telegram
+  and other messaging services. Each session is equivalent to an user and has
+  its own connection to Telegram's servers. Note that you have to set
+  (see `MTProto.Session.set_client/2`) a process to be notified of incoming
+  messages for every session.
 
-  iex> MTProto.sign_in(session_id, "0041000000000", "00000")
-  No client for 0000000000000000000, printing to console.
-  {0000000000000000000,
-     %{name: "rpc_result", req_msg_id: 0000000000000000000,
-      result: %{expires: 0000000000, name: "auth.authorization",
-        user: %{first_name: "XXXX", id: 000000000, inactive: %{name: "boolFalse"},
-          last_name: "", name: "userSelf", phone: "41000000000",
-          photo: %{name: "userProfilePhoto",
-            photo_big: %{dc_id: 4, local_id: 00000, name: "fileLocation",
-              secret: 0000000000000000000, volume_id: 000000000},
-            photo_id: 000000000000000000,
-            photo_small: %{dc_id: 4, local_id: 00000, name: "fileLocation",
-              secret: 0000000000000000000, volume_id: 000000000}},
-          status: %{name: "userStatusOffline", was_online: 0000000000},
-          username: "xxxxxxx"}}}}
-```
+  * `MTProto` (this module) - provides a "friendly" way to interact with
+  'low-level' methods. It allow you to connect/login/logout/send messages.
+  * `MTProto.API` (and submodules) - implementation of the Telegram API, as explained
+  [here](https://core.telegram.org/api#telegram-api) and
+  [here](https://core.telegram.org/schema).
+  * `MTProto.Session` : Provides manual control over sessions.
+  * Many modules **[1]** are not designed to be used by
+  the "standard" user hence are not documented here. You're welcome to take a
+  look/contribute : everything is on
+  [github](https://github.com/Fnux/telegram-mt-elixir).
 
+  **[1]** : `MTProto.Session.Brain`, `MTProto.Session.Handler`,
+  `MTProto.Session.HandlerSupervisor`, `MTProto.Session.Listener`,
+  `MTProto.Session.ListenerSupervisor`, `MTProto.Auth`, `MTProto.Crypto`,
+  `MTProto.DC`, `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
+  `MTProto.Supervisor` and `MTProto.TCP`.
   """
 
   @doc """
@@ -128,6 +126,13 @@ defmodule MTProto do
   end
 
   @doc """
+  @TODO
+  """
+  def sign_out(session_id) do
+  #@TODO
+  end
+
+  @doc """
     Send an encrypted message to Telegram on the session `sid`. Similar (alias)
     to `MTProto.Session.send(sid, msg, :encrypted)`.
   """
@@ -142,7 +147,7 @@ defmodule MTProto do
     * `dst_id` - ID (integer) of the recipient of the message
     * `content` - content of the message (string)
     * `type` - type of the recipient, either an user (`:contact`) or
-    a group (:chat`)
+    a group (`:chat`)
   """
   def send_message(session_id, dst_id, content, type \\ :contact) do
     peer = case type do
@@ -152,6 +157,13 @@ defmodule MTProto do
 
     msg = API.Messages.send_message(peer, content)
     Session.send session_id, msg
+  end
+
+  @doc """
+  @TODO
+  """
+  def get_contacts do
+    # @TODO
   end
 
   @doc false

@@ -66,7 +66,7 @@ defmodule MTProto.Session.Handler do
     cond do
       # Error message (4 bytes)
       byte_size(payload) == 4 ->
-        error = :binary.part(payload, 0, 4) |> TL.deserialize(:meta32)
+        error = :binary.part(payload, 0, 4) |> TL.deserialize(:int)
         Logger.warn "[Handler] #{session_id} : received error #{error}."
         Brain.process(%{name: "error", code: error}, session_id, :plain)
       byte_size(payload) >= 8 ->

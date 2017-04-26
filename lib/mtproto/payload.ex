@@ -84,7 +84,7 @@ defmodule MTProto.Payload do
   end
 
   # Generate id for messages,  Unix time * 2^32
-  defp generate_id do
+  def generate_id do
     :os.system_time(:seconds) * :math.pow(2,32) |> round
   end
 end

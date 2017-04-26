@@ -41,7 +41,6 @@ defmodule MTProto.Auth do
   end
 
   def server_DH_params_ok(msg, session_id) do
-    IO.inspect ">DH_OK"
     %{encrypted_answer: encrypted_answer,
      server_nonce: server_nonce} = msg
      session = Registry.get :session, session_id

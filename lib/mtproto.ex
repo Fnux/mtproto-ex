@@ -1,6 +1,6 @@
 defmodule MTProto do
   require Logger
-  alias MTProto.{Registry, DC, Session, AuthKey, API}
+  alias MTProto.{Registry, DC, Session, Auth, API}
 
   @moduledoc """
   MTProto implementation for Elixir. At this time, the project is still far
@@ -78,7 +78,7 @@ defmodule MTProto do
 
     if dc.auth_key == <<0::8*8>> do
       Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
-      AuthKey.generate(session_id)
+      Auth.generate(session_id)
     end
 
     {:ok, session_id}
@@ -126,10 +126,10 @@ defmodule MTProto do
   end
 
   @doc """
-  @TODO
+  Log out the user.
   """
   def sign_out(session_id) do
-  #@TODO
+    Session.send session_id, API.Auth.log_out
   end
 
   @doc """
@@ -162,8 +162,8 @@ defmodule MTProto do
   @doc """
   @TODO
   """
-  def get_contacts do
-    # @TODO
+  def get_contacts(session_id) do
+    Session.send session_id, API.Contacts.get_contacts
   end
 
   @doc false

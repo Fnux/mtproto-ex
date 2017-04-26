@@ -26,9 +26,8 @@ defmodule MTProto.Payload do
   end
 
   #  Wrap a message as a 'plain' payload.
-  def wrap(msg) do
+  def wrap(msg, msg_id) do
     auth_id_key = 0
-    msg_id =  generate_id()
     msg_len = byte_size(msg)
     TL.serialize(auth_id_key, :int64) <> TL.serialize(msg_id, :int64)
                                       <> TL.serialize(msg_len, :int)
@@ -46,7 +45,7 @@ defmodule MTProto.Payload do
   #  Unwrap a 'plain' payload.
   def unwrap(msg, :plain) do
     auth_key_id = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
-    messsage_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)
+    message_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)
     message_data_length = :binary.part(msg, 16, 4) |> TL.deserialize(:int)
     message_data = :binary.part(msg, 20, message_data_length)
 
@@ -55,7 +54,7 @@ defmodule MTProto.Payload do
 
     %{
       auth_key_id: auth_key_id,
-      message_id: messsage_id,
+      message_id: message_id,
       message_data_length: message_data_length,
       constructor: constructor,
       message_content: message_content

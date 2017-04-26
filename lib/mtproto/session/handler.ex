@@ -33,7 +33,8 @@ defmodule MTProto.Session.Handler do
   def send_plain(payload, session_id) do
     session = Registry.get :session, session_id
 
-    payload |> Payload.wrap |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
+    msg_id = Payload.generate_id
+    payload |> Payload.wrap(msg_id) |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
     # Update the sequence number
     Registry.set :session, session_id, :seqno, session.seqno + 1
@@ -75,6 +76,10 @@ defmodule MTProto.Session.Handler do
         # authorization key composed of 8 <<0>> : plain message.
         if auth_key == <<0::8*8>> do
           {map, _} = payload |> Payload.parse(:plain)
+
+          msg_id = Map.get map, :msg_id
+          Registry.set :session, session_id, :last_msg_id, msg_id
+
           Brain.process(map, session_id, :plain)
         else
           # Encrypted message

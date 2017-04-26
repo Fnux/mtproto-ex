@@ -21,7 +21,7 @@ defmodule MTProto.Method do
     q = pq / p |> round
     f = key_fingerprint
 
-    # Build & encryp p_q_inner_data
+    # Build & encrypt p_q_inner_data
     {_,data_with_hash} = p_q_inner_data(nonce, server_nonce, new_nonce, pq, p , q)
 
     # encrypted_data := RSA (data_with_hash, server_public_key); a 255-byte long number (big endian)
@@ -31,7 +31,6 @@ defmodule MTProto.Method do
     {e, n} = Crypto.get_key # get RSA public key components, @TODO : check with given fingerprint
     #encrypted_data = :crypto.public_encrypt :rsa, data_with_hash, [e,n], :rsa_no_padding
     encrypted_data = :crypto.mod_pow data_with_hash, e, n
-
 
     # Build req_DH_params payload
     Payload.build("req_DH_params", %{nonce: nonce,

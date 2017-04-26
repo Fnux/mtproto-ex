@@ -1,4 +1,4 @@
-defmodule MTProto.AuthKey do
+defmodule MTProto.Auth do
   require Logger
   alias MTProto.{Method, Crypto, Registry, Session}
   alias MTProto.Session.Handler
@@ -24,6 +24,7 @@ defmodule MTProto.AuthKey do
      server_public_key_fingerprints: key_fingerprint } = msg
 
     new_nonce = Crypto.rand_bytes(32)
+
     req_DH_params = Method.req_DH_params(
       nonce,
       server_nonce,
@@ -40,6 +41,7 @@ defmodule MTProto.AuthKey do
   end
 
   def server_DH_params_ok(msg, session_id) do
+    IO.inspect ">DH_OK"
     %{encrypted_answer: encrypted_answer,
      server_nonce: server_nonce} = msg
      session = Registry.get :session, session_id

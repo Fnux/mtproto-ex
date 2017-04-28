@@ -34,7 +34,10 @@ defmodule MTProto.Session.Handler do
     session = Registry.get :session, session_id
 
     msg_id = Payload.generate_id
-    payload |> Payload.wrap(msg_id) |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
+    auth_key = 0
+
+    packet = TL.serialize(auth_key, :long) <> Payload.wrap(payload, msg_id)
+    packet |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
     # Update the sequence number
     Registry.set :session, session_id, :seqno, session.seqno + 1

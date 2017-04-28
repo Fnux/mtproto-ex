@@ -27,19 +27,17 @@ defmodule MTProto.Payload do
 
   #  Wrap a message as a 'plain' payload.
   def wrap(msg, msg_id) do
-    auth_id_key = 0
     msg_len = byte_size(msg)
-    TL.serialize(auth_id_key, :int64) <> TL.serialize(msg_id, :int64)
-                                      <> TL.serialize(msg_len, :int)
-                                      <> msg
+    TL.serialize(msg_id, :long) <> TL.serialize(msg_len, :int)
+                                <> msg
   end
 
   #  Wrap a message as an 'encrypted' payload.
   def wrap(msg, msg_id, msg_seqno) do
     msg_len = byte_size(msg)
-    TL.serialize(msg_id, :int64) <> TL.serialize(msg_seqno, :int)
-                                 <> TL.serialize(msg_len, :int)
-                                 <> msg
+    TL.serialize(msg_id, :long) <> TL.serialize(msg_seqno, :int)
+                                <> TL.serialize(msg_len, :int)
+                                <> msg
   end
 
   #  Unwrap a 'plain' payload.

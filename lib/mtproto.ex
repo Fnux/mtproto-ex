@@ -90,17 +90,8 @@ defmodule MTProto do
     (generated with `connect/1`).
   """
   def send_code(session_id, phone) do
-    session = Registry.get(:session, session_id)
-    send_code = API.Auth.send_code(phone)
-    msg = unless session.initialized? do
-      api_layer = TL.Schema.api_layer_version
-      init_connection = init_connection_with("en", send_code)
-      API.invoke_with_layer(api_layer, init_connection)
-    else
-      send_code
-    end
-
-    Session.send session_id, msg
+    msg = API.Auth.send_code(phone)
+    send_with_initialization(session_id, msg)
   end
 
   @doc """
@@ -164,6 +155,22 @@ defmodule MTProto do
   """
   def get_contacts(session_id) do
     Session.send session_id, API.Contacts.get_contacts
+  end
+
+  @doc """
+  Initilize the connection (if not initialized yet) with default values
+  and the version of API layer to use.
+  """
+  def send_with_initialization(session_id, msg) do
+    session = Registry.get(:session, session_id)
+    unless session.initialized? do
+      api_layer = TL.Schema.api_layer_version
+      init_connection = init_connection_with("en", msg)
+      query = API.invoke_with_layer(api_layer, init_connection)
+      Session.send session_id, query
+    else
+      Session.send session_id, msg
+    end
   end
 
   @doc false

@@ -29,7 +29,7 @@ Each session has one listener and one handler (they are registered in the
   * [x] Fetch contacts informations (= names)
   * [x] Get contact/statuses
   * [x] Send messages
-* [ ] Basic documentation
+* [x] Basic documentation
 * [ ] Fix [issue #1](https://github.com/Fnux/telegram-mt-elixir/issues/1)
  (computation of the authorization key)
 * [ ] Fix [issue #2](https://github.com/Fnux/telegram-mt-elixir/issues/2)

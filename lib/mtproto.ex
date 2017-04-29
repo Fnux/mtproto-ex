@@ -151,7 +151,7 @@ defmodule MTProto do
   end
 
   @doc """
-  @TODO
+  Fetch the the contact list.
   """
   def get_contacts(session_id) do
     Session.send session_id, API.Contacts.get_contacts

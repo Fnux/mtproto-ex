@@ -38,16 +38,7 @@ defmodule MTProto.Session.Listener do
     session = Registry.get :session, session_id
 
     # Wait for incoming data
-    {status, data} = TCP.recv(session.socket)
-
-    if status == :error do
-      Logger.warn "[Listener] #{session_id} : socket closed. Exit."
-      Process.exit(self(), :error)
-    end
-
-    # Unwrap
-    payload = data |> :binary.list_to_bin
-                   |> TCP.unwrap
+    payload = TCP.recv(session.socket)
 
     # Dispatch to the related handler
     send session.handler, {:recv, payload}

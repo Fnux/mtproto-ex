@@ -24,9 +24,9 @@ Each session has one listener and one handler (they are registered in the
 * [x] Basic `mtproto` implementation
 * [x] Authorization key computation
 * [x] Authentification
-* [ ] Basic usage
+* [x] Basic usage
   * [x] Receive messages
-  * [ ] Fetch contacts informations (= name)
+  * [x] Fetch contacts informations (= names)
   * [x] Get contact/statuses
   * [x] Send messages
 * [ ] Basic documentation

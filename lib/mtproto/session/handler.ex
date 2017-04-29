@@ -47,8 +47,15 @@ defmodule MTProto.Session.Handler do
     session = Registry.get :session, session_id
     dc = Registry.get :dc, session.dc
 
-    # Wrap as encrypted message
     msg_id = Payload.generate_id()
+    msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
+      Logger.warn "Message ID overlap ! Generating with offset..."
+      Payload.generate_id(1)
+    else 
+      msg_id
+    end
+
+    # Wrap as encrypted message
     msg_seqno = (session.msg_seqno * 2 + 1)
     payload = Payload.wrap(payload, msg_id, msg_seqno)
 

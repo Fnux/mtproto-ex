@@ -27,13 +27,12 @@ defmodule MTProto.Method do
     # encrypted_data := RSA (data_with_hash, server_public_key); a 255-byte long number (big endian)
     # is raised to the requisite power over the requisite modulus, and the result is stored as a
     # 256-byte number.
-    #IO.inspect f |> TL.Binary.encode_signed
     {e, n} = Crypto.get_key # get RSA public key components, @TODO : check with given fingerprint
     #encrypted_data = :crypto.public_encrypt :rsa, data_with_hash, [e,n], :rsa_no_padding
     encrypted_data = :crypto.mod_pow data_with_hash, e, n
 
     # Build req_DH_params payload
-    Payload.build("req_DH_params", %{nonce: nonce,
+    TL.build("req_DH_params", %{nonce: nonce,
                   server_nonce: server_nonce,
                   p: p,
                   q: q,

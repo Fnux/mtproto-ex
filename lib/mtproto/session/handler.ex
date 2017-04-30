@@ -96,7 +96,7 @@ defmodule MTProto.Session.Handler do
           dc = Registry.get :dc, session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
+          #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
 
           {map, _} = decrypted |> Payload.parse(:encrypted)
           msg_id = Map.get map, :msg_id

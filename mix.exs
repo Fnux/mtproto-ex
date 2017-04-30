@@ -7,10 +7,12 @@ defmodule MTProto.Mixfile do
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,
+     description: description(),
+     package: package(),
      deps: deps(),
 
      # Docs
-     name: "MTProto",
+     name: "Telegram MT",
      source_url: "https://github.com/Fnux/telegram-mt-elixir",
      homepage_url: "https://github.com/Fnux/telegram-mt-elixir",
      docs: [main: "MTProto"]]
@@ -34,6 +36,21 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help deps" for more examples and options
   defp deps do
-    [{:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, github: "fnux/telegram-tl-elixir"}]
+    [{:ex_doc, "~> 0.14", only: :dev}, {:telegram_tl, "~> 0.0.8-alpha"}]
+  end
+
+  defp description do
+    """
+    MTProto (Telegram) implementation for Elixir.
+    """
+  end
+
+  defp package do
+    [
+      name: :telegram_mt,
+      files: ["lib", "priv", "mix.exs", "README*", "LICENSE*"],
+      maintainers: ["Timothée Floure"],
+      licenses: ["MIT"],
+      links: %{"GitHub" => "https://github.com/Fnux/telegram-mt-elixir"}]
   end
 end

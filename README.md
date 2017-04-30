@@ -1,11 +1,24 @@
-# MTProto-ex
+# Telegram MT(Proto)
 
 The aim of this project is to implement
-[MTProto](https://core.telegram.org/mtproto)(Telegram) in elixir. It's still in
-alpha, expect things to break. You may want to take a look at
+[MTProto](https://core.telegram.org/mtproto) (Telegram) in elixir.
+**Expect things to break** since it's still in alpha.
+You may also want to take a look at
 [this example](https://github.com/Fnux/telegram-client-elixir-demo).
 
-Oh, and it's my fisrt 'real' elixir project so it's probably awful.
+Oh, and it's my fisrt *real* elixir project so it's probably awful.
+
+This library is on [hex.pm](https://hex.pm/packages/telegram_mt),
+the documentation is available [here](https://hexdocs.pm/telegram_mt/MTProto.html).
+
+## Status & Roadmap
+
+Version `v0.0.1-alpha` has been released ([changelog](changelog.md)).
+
+**Status (in short) :** you currently can receive and send message, fetch
+contacts.
+
+@TODO
 
 ## How it work ?
 
@@ -18,22 +31,6 @@ users at the same time.
 Each session has one listener and one handler (they are registered in the
 `:session` registry). The `:dc` registry saves the data related to each specific DC
 (Telegram uses 5 DCs) such as the address or the authorization key.
-
-## Release alpha v0.0.1 : Roadmap
-
-* [x] Basic `mtproto` implementation
-* [x] Authorization key computation
-* [x] Authentification
-* [x] Basic usage
-  * [x] Receive messages
-  * [x] Fetch contacts informations (= names)
-  * [x] Get contact/statuses
-  * [x] Send messages
-* [x] Basic documentation
-* [ ] Fix [issue #1](https://github.com/Fnux/telegram-mt-elixir/issues/1)
- (computation of the authorization key)
-* [ ] Fix [issue #2](https://github.com/Fnux/telegram-mt-elixir/issues/2)
- (msg_seqno)
 
 ## Example
 

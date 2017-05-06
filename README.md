@@ -18,7 +18,16 @@ Version `v0.0.1-alpha` has been released ([changelog](changelog.md)).
 **Status (in short) :** you currently can receive and send message, fetch
 contacts.
 
-@TODO
+**Roadmap for `v0.0.2-alpha` :**
+
+* [ ] "Populate" most of the API modules
+(See the [available method list](https://core.telegram.org/methods))
+  * [ ] Working with authorizations (import/import)
+  * [x] Working with messages
+  * [x] Working with contacts
+  * [x] Help module
+  * ...
+* [ ] Handling different data centers
 
 ## How it work ?
 

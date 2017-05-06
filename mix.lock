@@ -1,4 +1,4 @@
-%{"earmark": {:hex, :earmark, "1.2.0", "bf1ce17aea43ab62f6943b97bd6e3dc032ce45d4f787504e3adf738e54b42f3a", [:mix], []},
+%{"earmark": {:hex, :earmark, "1.2.1", "7ad3f203ab84d31832814483c834e006cf88949f061a4b50d7e783147572280f", [:mix], []},
   "ex_doc": {:hex, :ex_doc, "0.15.1", "d5f9d588fd802152516fccfdb96d6073753f77314fcfee892b15b6724ca0d596", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, optional: false]}]},
   "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], []},
-  "telegram_tl": {:hex, :telegram_tl, "0.0.8-alpha", "b59437d1a8b85bc2146490a6a5d2c07657b55c364b84546c5ece5752e438e379", [:mix], [{:poison, "~> 3.0", [hex: :poison, optional: false]}]}}
+  "telegram_tl": {:hex, :telegram_tl, "0.0.9-alpha", "a36fb0645b3d20a5a3ec3e3559d58e5e7cf06bcb503dcba0de92a9761fb2abaa", [:mix], [{:poison, "~> 3.0", [hex: :poison, optional: false]}]}}

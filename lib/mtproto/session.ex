@@ -1,5 +1,7 @@
 defmodule MTProto.Session do
+  require Logger
   alias MTProto.{Crypto, Registry}
+  alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
 
   @moduledoc """
   Provide advanced control over sessions.
@@ -40,14 +42,37 @@ defmodule MTProto.Session do
   Open a new session. `dc_id` is used to select which datacenter to connect,
   `client` is the PID of the process to be notified when receiving new messages.
 
-  Returns `session_id`.
+  Returns the `session_id`.
   """
   def open(dc_id, client \\ nil) do
     session_id = Crypto.rand_bytes(8)
-    {:ok, _} = MTProto.Session.HandlerSupervisor.pop(session_id, dc_id)
+    {:ok, _} = HandlerSupervisor.pop(session_id, dc_id)
     set_client(session_id, client)
-    {:ok, _} = MTProto.Session.ListenerSupervisor.pop(session_id)
+    {:ok, _} = ListenerSupervisor.pop(session_id)
     session_id
+  end
+
+  @doc """
+  Close the current connection to Telegram's server and open a new one to
+  the given DC.
+
+  * `dc_id` - ID of the DC to connect.
+  """
+  def reconnect(session_id, dc_id) do
+    # Update session's DC
+    Registry.set(:session, session_id, :dc, dc_id)
+
+    # Close old socket and open a new one
+    :ok = ListenerSupervisor.drop(session_id)
+    {:ok, _} = ListenerSupervisor.pop(session_id)
+
+    # Generate a new authorization key if necessary
+    dc = Registry.get(:dc, dc_id)
+
+    if dc.auth_key == <<0::8*8>> do
+      Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
+      MTProto.Auth.generate(session_id)
+    end
   end
 
   @doc """
@@ -55,8 +80,8 @@ defmodule MTProto.Session do
   session from the registry.
   """
   def close(session_id) do
-    :ok = MTProto.Session.ListenerSupervisor.drop(session_id)
-    :ok = MTProto.Session.HandlerSupervisor.drop(session_id)
+    :ok = ListenerSupervisor.drop(session_id)
+    :ok = HandlerSupervisor.drop(session_id)
     Registry.drop :session, session_id
   end
 
@@ -68,7 +93,7 @@ defmodule MTProto.Session do
   def send(session_id, message, type \\ :encrypted) do
     session = Registry.get :session, session_id
     call = if type == :plain, do: :send_plain, else: :send
-    GenServer.call session.handler, {call, message}
+    Kernel.send session.handler, {call, message}
   end
 
   @doc """

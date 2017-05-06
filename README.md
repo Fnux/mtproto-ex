@@ -27,7 +27,7 @@ contacts.
   * [x] Working with contacts
   * [x] Help module
   * ...
-* [ ] Handling different data centers
+* [x] Handling different data centers
 
 ## How it work ?
 

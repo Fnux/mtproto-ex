@@ -18,16 +18,56 @@ defmodule MTProto.Session.Handler do
     {:ok, session_id}
   end
 
+  # Receive a message, parse and dispatch.
+  def handle_info({:recv, payload}, session_id) do
+    session = Registry.get :session, session_id
+    cond do
+      # MTProto error message (4 bytes). Do no confuse with RPC errors !
+      byte_size(payload) == 4 ->
+        error = :binary.part(payload, 0, 4) |> TL.deserialize(:int)
+        Brain.process(%{name: "error", code: error}, session_id, :plain)
+      # Proper messages
+      byte_size(payload) >= 8 ->
+        auth_key = :binary.part(payload, 0, 8)
+
+        # authorization key composed of 8 <<0>> : plain message.
+        if auth_key == <<0::8*8>> do
+          {map, _} = payload |> Payload.parse(:plain)
+
+          msg_id = Map.get map, :msg_id
+          Registry.set :session, session_id, :last_msg_id, msg_id
+
+          Brain.process(map, session_id, :plain)
+        else
+          # Encrypted message
+          dc = Registry.get :dc, session.dc
+
+          decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
+          #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
+
+          {map, _} = decrypted |> Payload.parse(:encrypted)
+          msg_id = Map.get map, :msg_id
+          Registry.set :session, session_id, :last_msg_id, msg_id
+
+          Brain.process(map, session_id, :encrypted)
+        end
+      true ->
+        Logger.debug "[Handler] #{session_id} : received unknow message."
+    end
+
+    {:noreply, session_id}
+  end
+
   # Send a plain message
-  def handle_call({:send_plain, payload}, _from, session_id) do
-    reply = send_plain(payload, session_id)
-    {:reply, reply, session_id}
+  def handle_info({:send_plain, payload}, session_id) do
+    send_plain(payload, session_id)
+    {:noreply, session_id}
   end
 
   # Send an encrypted_message
-  def handle_call({:send, payload}, _from, session_id) do
-    reply = send_encrypted(payload, session_id)
-    {:reply, reply, session_id}
+  def handle_info({:send, payload}, session_id) do
+    send_encrypted(payload, session_id)
+    {:noreply, session_id}
   end
 
   def send_plain(payload, session_id) do
@@ -69,46 +109,6 @@ defmodule MTProto.Session.Handler do
     else
       {:error, "Auth key does not exist"}
     end
-  end
-
-  # Receive a message, parse and dispatch.
-  def handle_info({:recv, payload}, session_id) do
-    session = Registry.get :session, session_id
-    cond do
-      # Error message (4 bytes)
-      byte_size(payload) == 4 ->
-        error = :binary.part(payload, 0, 4) |> TL.deserialize(:int)
-        Logger.warn "[Handler] #{session_id} : received error #{error}."
-        Brain.process(%{name: "error", code: error}, session_id, :plain)
-      byte_size(payload) >= 8 ->
-        auth_key = :binary.part(payload, 0, 8)
-
-        # authorization key composed of 8 <<0>> : plain message.
-        if auth_key == <<0::8*8>> do
-          {map, _} = payload |> Payload.parse(:plain)
-
-          msg_id = Map.get map, :msg_id
-          Registry.set :session, session_id, :last_msg_id, msg_id
-
-          Brain.process(map, session_id, :plain)
-        else
-          # Encrypted message
-          dc = Registry.get :dc, session.dc
-
-          decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
-          #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
-
-          {map, _} = decrypted |> Payload.parse(:encrypted)
-          msg_id = Map.get map, :msg_id
-          Registry.set :session, session_id, :last_msg_id, msg_id
-
-          Brain.process(map, session_id, :encrypted)
-        end
-      true ->
-        Logger.debug "[Handler] #{session_id} : received unknow message."
-    end
-
-    {:noreply, session_id}
   end
 
   def terminate(_reason, state) do

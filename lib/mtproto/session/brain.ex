@@ -1,11 +1,11 @@
 defmodule MTProto.Session.Brain do
   require Logger
-  alias MTProto.{Auth, Registry}
+  alias MTProto.{Auth, Registry, Session}
   alias MTProto.Session.Handler
 
   @moduledoc false
 
-  # Process a plain message
+  # Process plain messages
   def process(msg, session_id, :plain) do
     name = Map.get(msg, :name)
 
@@ -16,24 +16,13 @@ defmodule MTProto.Session.Brain do
       "dh_gen_ok" -> Auth.dh_gen_ok(msg, session_id)
       "dh_gen_fail" -> Auth.dh_gen_fail(msg, session_id)
       "dh_gen_retry" -> Auth.dh_gen_fail(msg, session_id)
-      "error" ->
-        if Map.get(msg, :code) == -404 do
-          session = Registry.get(:session, session_id)
-          dc = Registry.get(:dc, session.dc)
-          if dc.auth_key == <<0::8*8>> do
-            Logger.debug "[Brain] I received a -404 error. I still don't have an auth key
-            for this DC (#{dc.id}). Generating authorization key."
-            Auth.req_pq(session_id)
-          else
-            Logger.warn "[Brain] Received error. I don't know what to do !"
-          end
-        end
+      "error" -> handle_error(session_id, msg)
       _ ->
-        Logger.debug "[Brain] #{session_id} : received an unknow predicate #{name}."
+        Logger.debug "[MT][Brain] Unknow predicate : #{name}"
     end
   end
 
-  # Process an encrypted message
+  # Process encrypted messages
   def process(msg, session_id, :encrypted) do
     session = Registry.get :session, session_id
     name = Map.get(msg, :name)
@@ -47,6 +36,7 @@ defmodule MTProto.Session.Brain do
         "auth.sentCode" ->
           hash = Map.get result, :phone_code_hash
           Registry.set :session, session_id, :phone_code_hash, hash
+        "rpc_error" -> handle_rpc_error(session_id, result)
           _ -> :noop
       end
 
@@ -62,6 +52,45 @@ defmodule MTProto.Session.Brain do
     else
       IO.puts "No client for #{session_id}, printing to console."
       IO.inspect {session_id, msg}
+    end
+  end
+
+  ## Error Handling
+  ## See https://core.telegram.org/api/errors
+
+  # Handle errors for plain messages
+  defp handle_error(session_id, msg) do
+    error_code = Map.get(msg, :code)
+
+    case error_code do
+      -404 ->
+        session = Registry.get(:session, session_id)
+        dc = Registry.get(:dc, session.dc)
+        if dc.auth_key == <<0::8*8>> do
+          Logger.debug "[MT][Brain] I received a -404 error. I still don't have an auth key
+          for this DC (#{dc.id}) so I'm going to generate one ! I'm a workaround ;("
+          Auth.req_pq(session_id)
+        end
+        _ -> Logger.warn "[MT][Brain] Unknown error : #{error_code}"
+    end
+  end
+
+  # Handle errors for encrypted messages
+  defp handle_rpc_error(session_id, rpc_result) do
+    error_code = Map.get(rpc_result, :error_code)
+    error_message = Map.get(rpc_result, :error_message)
+
+    Logger.warn "[MT][Brain] RPC error : #{error_code} | #{error_message}"
+    case error_code do
+      303 -> # 303 ERROR_SEE_OTHER
+      if error_message =~ ~r/^PHONE_MIGRATE_(\d)$/ do # PHONE_MIGRATE_X
+        dc_id = Regex.run(~r/^PHONE_MIGRATE_(\d)$/, error_message)
+                  |> List.last
+                  |> String.to_integer
+        # Automatically reconnectto the new DC
+        Session.reconnect(session_id, dc_id)
+      end
+      _ -> :noop
     end
   end
 end

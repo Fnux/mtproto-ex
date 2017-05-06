@@ -13,7 +13,7 @@ the documentation is available [here](https://hexdocs.pm/telegram_mt/MTProto.htm
 
 ## Status & Roadmap
 
-Version `v0.0.1-alpha` has been released ([changelog](changelog.md)).
+Version `v0.0.2-alpha` has been released ([changelog](changelog.md)).
 
 **Status (in short) :** you currently can receive and send message, fetch
 contacts and chats.

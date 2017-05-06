@@ -16,18 +16,9 @@ the documentation is available [here](https://hexdocs.pm/telegram_mt/MTProto.htm
 Version `v0.0.1-alpha` has been released ([changelog](changelog.md)).
 
 **Status (in short) :** you currently can receive and send message, fetch
-contacts.
+contacts and chats.
 
-**Roadmap for `v0.0.2-alpha` :**
-
-* [ ] "Populate" most of the API modules
-(See the [available method list](https://core.telegram.org/methods))
-  * [ ] Working with authorizations (import/import)
-  * [x] Working with messages
-  * [x] Working with contacts
-  * [x] Help module
-  * ...
-* [x] Handling different data centers
+@TODO
 
 ## How it work ?
 

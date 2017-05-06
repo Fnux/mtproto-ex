@@ -30,6 +30,8 @@ defmodule MTProto do
   [here](https://core.telegram.org/api#telegram-api) and
   [here](https://core.telegram.org/schema).
   * `MTProto.Session` : Provides manual control over sessions.
+  * `MTProto.DC` : Provides manual control over DC (i.e. import/export authorization
+key).
   * Many modules **[1]** are not designed to be used by
   the "standard" user hence are not documented here. You're welcome to take a
   look/contribute : everything is on
@@ -38,7 +40,7 @@ defmodule MTProto do
   **[1]** : `MTProto.Session.Brain`, `MTProto.Session.Handler`,
   `MTProto.Session.HandlerSupervisor`, `MTProto.Session.Listener`,
   `MTProto.Session.ListenerSupervisor`, `MTProto.Auth`, `MTProto.Crypto`,
-  `MTProto.DC`, `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
+  `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
   `MTProto.Supervisor` and `MTProto.TCP`.
   """
 

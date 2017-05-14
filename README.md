@@ -18,7 +18,10 @@ Version `v0.0.2-alpha` has been released ([changelog](changelog.md)).
 **Status (in short) :** you currently can receive and send message, fetch
 contacts and chats.
 
-@TODO
+**Roadmap for `v0.0.3-alpha`** :
+
+* File handling (upload & download).
+* **Due to my studies, this project is on hold until late june.**
 
 ## How it work ?
 

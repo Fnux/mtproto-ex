@@ -48,6 +48,7 @@ key).
     Start the supervision tree and set default values in the registry.
     Automatically started.
   """
+  def start(), do: start(nil, nil)
   def start(_type, _args) do
     # Ensure API_ID and API_HASH are set in the config
     api_id = Application.get_env(:telegram_tl, :api_id)

@@ -13,7 +13,7 @@ defmodule MTProto.API do
   Initializes connection and save information on the user's device and application.
   """
   def init_connection(device_model, system_version, app_version, lang, query) do
-    api_id = Application.get_env(:telegram_tl, :api_id)
+    api_id = Application.get_env(:telegram_mt, :api_id)
     TL.build("initConnection", %{api_id: api_id,
                   device_model: device_model,
                   system_version: system_version,

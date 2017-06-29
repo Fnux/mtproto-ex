@@ -51,8 +51,8 @@ key).
   def start(), do: start(nil, nil)
   def start(_type, _args) do
     # Ensure API_ID and API_HASH are set in the config
-    api_id = Application.get_env(:telegram_tl, :api_id)
-    api_hash = Application.get_env(:telegram_tl, :api_hash)
+    api_id = Application.get_env(:telegram_mt, :api_id)
+    api_hash = Application.get_env(:telegram_mt, :api_hash)
 
     if api_id == nil, do: Logger.error "API_ID is not set !"
     if api_hash == nil, do: Logger.error "API_HASH is not set !"

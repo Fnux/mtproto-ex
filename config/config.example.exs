@@ -8,7 +8,7 @@ use Mix.Config
 # if you want to provide default values for your application for
 # 3rd-party users, it should be done in your "mix.exs" file.
 
-config :telegram_tl,
+config :telegram_mt,
   api_id: "00000",
   api_hash: "00000"
 

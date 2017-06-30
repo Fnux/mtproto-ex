@@ -3,7 +3,7 @@ defmodule MTProto.Mixfile do
 
   def project do
     [app: :telegram_mt,
-     version: "0.0.2-alpha",
+     version: "0.0.3-alpha",
      elixir: "~> 1.4",
      build_embedded: Mix.env == :prod,
      start_permanent: Mix.env == :prod,

@@ -15,7 +15,8 @@ defmodule MTProto.Mixfile do
      name: "Telegram MT",
      source_url: "https://github.com/Fnux/telegram-mt-elixir",
      homepage_url: "https://github.com/Fnux/telegram-mt-elixir",
-     docs: [main: "MTProto"]]
+     docs: [main: "readme", extras: ["README.md"]]
+    ]
   end
 
   # Configuration for the OTP application

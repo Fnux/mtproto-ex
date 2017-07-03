@@ -3,45 +3,7 @@ defmodule MTProto do
   require Logger
 
   @moduledoc """
-  MTProto implementation for Elixir. At this time, the project is still far
-  from complete : **expect things to break**.
-
-  #### Other resources
-
-  A demo client is avaible
-  on [github](https://github.com/Fnux/telegram-client-elixir-demo).
-  You may also want to take a look to the
-  [README](https://github.com/Fnux/telegram-mt-elixir) page of the project,
-  where you can find more detailed informations and examples.
-
-
-  #### Overview
-
-  This library allows you to handle mutiple users, which is fondamental since
-  it was originally designed in order to build bridges between Telegram
-  and other messaging services. Each session is equivalent to an user and has
-  its own connection to Telegram's servers. Note that you have to set
-  (see `MTProto.Session.set_client/2`) a process to be notified of incoming
-  messages for every session.
-
-  * `MTProto` (this module) - provides a "friendly" way to interact with
-  'low-level' methods. It allow you to connect/login/logout/send messages.
-  * `MTProto.API` (and submodules) - implementation of the Telegram API, as explained
-  [here](https://core.telegram.org/api#telegram-api) and
-  [here](https://core.telegram.org/schema).
-  * `MTProto.Session` : Provides manual control over sessions.
-  * `MTProto.DC` : Provides manual control over DC (i.e. import/export authorization
-key).
-  * Many modules **[1]** are not designed to be used by
-  the "standard" user hence are not documented here. You're welcome to take a
-  look/contribute : everything is on
-  [github](https://github.com/Fnux/telegram-mt-elixir).
-
-  **[1]** : `MTProto.Session.Brain`, `MTProto.Session.Handler`,
-  `MTProto.Session.HandlerSupervisor`, `MTProto.Session.Listener`,
-  `MTProto.Session.ListenerSupervisor`, `MTProto.Auth`, `MTProto.Crypto`,
-  `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
-  `MTProto.Supervisor` and `MTProto.TCP`.
+  MTProto implementation for Elixir. Base module.
   """
 
   @doc """

@@ -1,35 +1,52 @@
 # Telegram MT(Proto)
 
-The aim of this project is to implement
-[MTProto](https://core.telegram.org/mtproto) (Telegram) in elixir.
-**Expect things to break** since it's still in alpha.
-You may also want to take a look at
-[this example](https://github.com/Fnux/telegram-client-elixir-demo).
+[MTProto](https://core.telegram.org/mtproto) implementation in elixir.
+The project is still in *alpha* : **Expect things to break**.
+Note that it's my fisrt real elixir project, so it's probably awful.
 
-Oh, and it's my fisrt *real* elixir project so it's probably awful.
-
-This library is on [hex.pm](https://hex.pm/packages/telegram_mt),
+This library is on [hex.pm](https://hex.pm/packages/telegram_mt) and
 the documentation is available [here](https://hexdocs.pm/telegram_mt/MTProto.html).
+
+## Useful links
+
+  * [Github repository](https://github.com/Fnux/telegram-mt-elixir)
+  * [Demo app](https://github.com/Fnux/telegram-client-elixir-demo)
+  * [Telegram API](https://core.telegram.org/api#telegram-api)
+  * [MTProto's documentation](https://core.telegram.org/mtproto)
 
 ## Status & Roadmap
 
 Version `v0.0.2-alpha` has been released ([changelog](changelog.md)).
 
-**Status (in short) :** you currently can receive and send message, fetch
+**Status :** you currently can receive and send message, fetch
 contacts and chats.
 
-**Roadmap for `v0.0.3-alpha`** :
+## Overview
 
-* File handling (upload & download).
-* **Due to my studies, this project is on hold until late june.**
+This library allows you to handle mutiple users, which is fondamental since
+it was originally designed to build bridges between Telegram
+and other messaging services. Each session is equivalent to an user and has
+its own connection to Telegram's servers. Note that you have to set
+(see `MTProto.Session.set_client/2`) a process to be notified of incoming
+messages for every session.
 
-## How it work ?
+* `MTProto` (this module) - provides a "friendly" way to interact with
+'low-level' methods. It allow you to connect/login/logout/send messages.
+* `MTProto.API` (and submodules) - implementation of the Telegram API, as explained
+[here](https://core.telegram.org/api#telegram-api) and
+[here](https://core.telegram.org/schema).
+* `MTProto.Session` : Provides manual control over sessions.
+* `MTProto.DC` : Provides manual control over DCs.
+* Many modules **[1]** are not designed to be used by
+the "standard" user hence not documented here.
 
-I originally created this project in order to create bridges between Telegram and
-other services (IRC, Matrix, ... ?). Hence, it must be able to handle multiple
-users at the same time.
+**[1]** : `MTProto.Session.Brain`, `MTProto.Session.Handler`,
+  `MTProto.Session.HandlerSupervisor`, `MTProto.Session.Listener`,
+  `MTProto.Session.ListenerSupervisor`, `MTProto.Auth`, `MTProto.Crypto`,
+  `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
+  `MTProto.Supervisor` and `MTProto.TCP`.
 
-![observer](observer.png "Observer - 1 session") *Observer - 1 session*.
+![observer](http://git.fnux.ch/telegram-mt-elixir/plain/observer.png "Observer - 1 session")
 
 Each session has one listener and one handler (they are registered in the
 `:session` registry). The `:dc` registry saves the data related to each specific DC

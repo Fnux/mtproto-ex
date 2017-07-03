@@ -3,7 +3,7 @@ defmodule MTProto.Session do
   alias MTProto.{Crypto, Registry, Session, DC}
   alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
 
-  @table :session
+  @table SessionRegistry
   @moduledoc """
   Provide advanced control over sessions.
 

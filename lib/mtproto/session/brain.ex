@@ -1,7 +1,7 @@
 defmodule MTProto.Session.Brain do
-  require Logger
-  alias MTProto.{Auth, Registry, Session}
+  alias MTProto.{Auth, Session, DC}
   alias MTProto.Session.Handler
+  require Logger
 
   @moduledoc false
 
@@ -24,7 +24,7 @@ defmodule MTProto.Session.Brain do
 
   # Process encrypted messages
   def process(msg, session_id, :encrypted) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     name = Map.get(msg, :name)
 
     # Process RPC
@@ -35,7 +35,7 @@ defmodule MTProto.Session.Brain do
       case name do
         "auth.sentCode" ->
           hash = Map.get result, :phone_code_hash
-          Registry.set :session, session_id, :phone_code_hash, hash
+          Session.update(session_id, phone_code_hash: hash)
         "rpc_error" -> handle_rpc_error(session_id, result)
           _ -> :noop
       end
@@ -64,8 +64,8 @@ defmodule MTProto.Session.Brain do
 
     case error_code do
       -404 ->
-        session = Registry.get(:session, session_id)
-        dc = Registry.get(:dc, session.dc)
+        session = Session.get(session_id)
+        dc = DC.get(session.dc)
         if dc.auth_key == <<0::8*8>> do
           Logger.debug "[MT][Brain] I received a -404 error. I still don't have an auth key
           for this DC (#{dc.id}) so I'm going to generate one ! I'm a workaround ;("

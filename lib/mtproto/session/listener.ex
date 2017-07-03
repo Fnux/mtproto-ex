@@ -1,8 +1,7 @@
 defmodule MTProto.Session.Listener do
-  use GenServer
+  alias MTProto.{TCP, Session, DC}
   require Logger
-  alias MTProto.Registry
-  alias MTProto.TCP
+  use GenServer
 
   @moduledoc false
 
@@ -13,18 +12,15 @@ defmodule MTProto.Session.Listener do
   # Initialize the listener
   def init({:start, session_id}) do
     Logger.debug "[Listener] #{session_id} : starting listener."
-    session = Registry.get :session, session_id
-    dc = Registry.get :dc, session.dc
-
-    Registry.set :session, session_id, :seqno, 0
-    Registry.set :session, session_id, :msg_seqno, 0
+    session = Session.get(session_id)
+    dc = DC.get(session.dc)
 
     # Connect to Telegram's servers
     {:ok, socket} = TCP.connect dc.address, dc.port
 
     # Register listener and socket
-    Registry.set :session, session_id, :listener, self()
-    Registry.set :session, session_id, :socket, socket
+    map = %{seqno: 0, msg_seqno: 0, listener: self(), socket: socket}
+    Session.set session_id, struct(session, map)
 
     # Start the listening loop
     send self(), :listen
@@ -35,7 +31,7 @@ defmodule MTProto.Session.Listener do
   # Listening loop
   def handle_info(:listen, session_id) do
     # Get session
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
 
     # Wait for incoming data
     payload = TCP.recv(session.socket)
@@ -53,7 +49,7 @@ defmodule MTProto.Session.Listener do
     Logger.debug "[Listener] #{session_id} : terminating listener."
 
     # Get session
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
 
     # Close the connection
     TCP.close(session.socket)

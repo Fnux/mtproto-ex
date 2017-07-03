@@ -1,6 +1,6 @@
 defmodule MTProto.Session.Handler do
   require Logger
-  alias MTProto.{TCP, Registry, Crypto, Session, Payload}
+  alias MTProto.{TCP, Crypto, Session, DC, Payload}
   alias MTProto.Session.Brain
 
   @moduledoc false
@@ -13,14 +13,14 @@ defmodule MTProto.Session.Handler do
   def init({session_id, dc_id}) do
     Logger.debug "[Handler] #{session_id} : starting handler."
 
-    Registry.set :session, session_id, %Session{handler: self(), dc: dc_id}
+    Session.update session_id, %{handler: self(), dc: dc_id}
 
     {:ok, session_id}
   end
 
   # Receive a message, parse and dispatch.
   def handle_info({:recv, payload}, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     cond do
       # MTProto error message (4 bytes). Do no confuse with RPC errors !
       byte_size(payload) == 4 ->
@@ -31,26 +31,23 @@ defmodule MTProto.Session.Handler do
         auth_key = :binary.part(payload, 0, 8)
 
         # authorization key composed of 8 <<0>> : plain message.
-        if auth_key == <<0::8*8>> do
+        {map, scheme} = if auth_key == <<0::8*8>> do
           {map, _} = payload |> Payload.parse(:plain)
-
-          msg_id = Map.get map, :msg_id
-          Registry.set :session, session_id, :last_msg_id, msg_id
-
-          Brain.process(map, session_id, :plain)
+          {map, :plain}
         else
           # Encrypted message
-          dc = Registry.get :dc, session.dc
+          dc = DC.get session.dc
 
           decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
           #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
 
           {map, _} = decrypted |> Payload.parse(:encrypted)
-          msg_id = Map.get map, :msg_id
-          Registry.set :session, session_id, :last_msg_id, msg_id
-
-          Brain.process(map, session_id, :encrypted)
+          {map, :encrypted}
         end
+
+        msg_id = Map.get map, :msg_id
+        Session.set session_id, struct(session, last_msg_id: msg_id)
+        Brain.process(map, session_id, scheme)
       true ->
         Logger.debug "[Handler] #{session_id} : received unknow message."
     end
@@ -71,7 +68,7 @@ defmodule MTProto.Session.Handler do
   end
 
   def send_plain(payload, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
 
     msg_id = Payload.generate_id
     auth_key = 0
@@ -80,12 +77,12 @@ defmodule MTProto.Session.Handler do
     packet |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
     # Update the sequence number
-    Registry.set :session, session_id, :seqno, session.seqno + 1
+    Session.set session_id, struct(session, seqno: session.seqno + 1)
   end
 
   def send_encrypted(payload, session_id) do
-    session = Registry.get :session, session_id
-    dc = Registry.get :dc, session.dc
+    session = Session.get session_id
+    dc = DC.get session.dc
 
     msg_id = Payload.generate_id()
     msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
@@ -104,8 +101,8 @@ defmodule MTProto.Session.Handler do
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
       # Update the sequence numbers
-      Registry.set(:session, session_id, :msg_seqno, session.msg_seqno + 1)
-      Registry.set :session, session_id, :seqno, session.seqno + 1
+      map = %{msg_seqno: session.msg_seqno + 1, seqno: session.seqno + 1}
+      Session.set session_id, struct(session, map)
     else
       {:error, "Auth key does not exist"}
     end

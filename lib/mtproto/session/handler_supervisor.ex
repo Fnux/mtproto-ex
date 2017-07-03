@@ -1,6 +1,6 @@
 defmodule MTProto.Session.HandlerSupervisor do
+  alias MTProto.Session
   use Supervisor
-  alias MTProto.Registry
 
   @moduledoc false
   @name MTProto.Session.HandlerSupervisor
@@ -22,7 +22,7 @@ defmodule MTProto.Session.HandlerSupervisor do
   end
 
   def drop(session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     Supervisor.terminate_child @name, session.listener
   end
 end

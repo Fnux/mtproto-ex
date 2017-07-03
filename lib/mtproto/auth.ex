@@ -1,6 +1,6 @@
 defmodule MTProto.Auth do
   require Logger
-  alias MTProto.{Method, Crypto, Registry, Session}
+  alias MTProto.{Method,Crypto,Session,DC}
   alias MTProto.Session.Handler
   alias TL.Binary
 
@@ -32,8 +32,7 @@ defmodule MTProto.Auth do
       pq,
       Enum.at(key_fingerprint,0))
 
-    Registry.set :session, session_id, :new_nonce, new_nonce
-    Registry.set :session, session_id, :server_nonce, server_nonce
+    Session.update(session_id, %{new_nonce: new_nonce, server_nonce: server_nonce})
 
     #handler = Registry.get :session, session_id, :handler
     #MTProto.send handler, req_DH_params, :plain
@@ -43,7 +42,7 @@ defmodule MTProto.Auth do
   def server_DH_params_ok(msg, session_id) do
     %{encrypted_answer: encrypted_answer,
      server_nonce: server_nonce} = msg
-     session = Registry.get :session, session_id
+     session = Session.get(session_id)
 
      # Build keys for decrypting/encrypting AES256 IGE
      {tmp_aes_key, tmp_aes_iv} = Crypto.build_tmp_aes(server_nonce, session.new_nonce)
@@ -65,9 +64,7 @@ defmodule MTProto.Auth do
       b = Crypto.rand_bytes(32) # random number
       set_client_DH_params = Method.set_client_DH_params(nonce, server_nonce, g, b, dh_prime, tmp_aes_key, tmp_aes_iv)
 
-      Registry.set :session, session_id, :g_a, g_a
-      Registry.set :session, session_id, :b, b
-      Registry.set :session, session_id, :dh_prime, dh_prime
+      Session.set(session_id, struct(session, %{g_a: g_a, b: b, dh_prime: dh_prime}))
 
       #handler = Registry.get :session, session_id, :handler
       #MTProto.send handler, set_client_DH_params, :plain
@@ -76,7 +73,7 @@ defmodule MTProto.Auth do
 
   # Check + Abort ?
   def server_DH_params_fail(msg, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     auth_key = build_auth_key(session_id)
 
     %{new_nonce_hash: new_nonce_hash} = msg
@@ -86,7 +83,7 @@ defmodule MTProto.Auth do
   end
 
   def dh_gen_ok(msg, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     auth_key = build_auth_key(session)
 
     %{new_nonce_hash1: new_nonce_hash1} = msg
@@ -97,10 +94,11 @@ defmodule MTProto.Auth do
     salt_right = session.server_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
     server_salt = :erlang.bxor salt_left, salt_right
 
-    Registry.set :dc, session.dc, :auth_key, auth_key
-    Registry.set :dc, session.dc, :server_salt, server_salt
+    DC.update(session.dc, %{auth_key: auth_key, server_salt: server_salt})
 
-    Registry.drop :session, session_id, [:server_nonce, :new_nonce, :g_a, :b, :dh_prime]
+    # Clean session's registry from temporary values
+    map = %{server_nonce: nil, new_nonce: nil, g_a: nil, dh_prine: nil}
+    Session.set(session_id, struct(session, map))
 
     Logger.debug "The authorization key was successfully generated."
     # Send notification to the client ?
@@ -108,7 +106,7 @@ defmodule MTProto.Auth do
 
   # Check + Retry ?
   def dh_gen_retry(msg, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     auth_key = build_auth_key(session)
 
     %{new_nonce_hash2: new_nonce_hash2} = msg
@@ -122,7 +120,7 @@ defmodule MTProto.Auth do
 
   # Check + Abort ?
   def dh_gen_fail(msg, session_id) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     auth_key = build_auth_key(session)
 
     %{new_nonce_hash3: new_nonce_hash3} = msg

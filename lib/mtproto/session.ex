@@ -1,8 +1,9 @@
 defmodule MTProto.Session do
   require Logger
-  alias MTProto.{Crypto, Registry}
+  alias MTProto.{Crypto, Registry, Session, DC}
   alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
 
+  @table :session
   @moduledoc """
   Provide advanced control over sessions.
 
@@ -36,7 +37,30 @@ defmodule MTProto.Session do
     last_msg_id: 0,
     seqno: 0,
     msg_seqno: 0,
-    socket: 0
+    socket: 0,
+    new_nonce: nil, # auth key computation
+    server_nonce: nil, # auth key computation
+    g_a: nil, # auth key computation
+    b: nil, # auth key computation
+    dh_prime: nil #auth key computation
+
+  ####
+  # Registry access
+
+  def get(id), do: Registry.get @table, id
+
+  def get_all(), do: Registry.dump @table
+
+  def set(id, value), do: Registry.set @table, id, value
+
+  def update(id, value) do
+    session = Session.get id
+    Session.set id, struct(session, value)
+  end
+
+  def drop(id), do: Registry.drop @table, id
+
+  ###
 
   @doc """
   Open a new session. `dc_id` is used to select which datacenter to connect,
@@ -46,8 +70,9 @@ defmodule MTProto.Session do
   """
   def open(dc_id, client \\ nil) do
     session_id = Crypto.rand_bytes(8)
+    Session.set session_id, struct(Session, dc: dc_id, client: client)
+
     {:ok, _} = HandlerSupervisor.pop(session_id, dc_id)
-    set_client(session_id, client)
     {:ok, _} = ListenerSupervisor.pop(session_id)
     session_id
   end
@@ -60,16 +85,14 @@ defmodule MTProto.Session do
   """
   def reconnect(session_id, dc_id) do
     # Update session's DC
-    Registry.set(:session, session_id, :dc, dc_id)
+    Session.update(session_id, dc: dc_id)
 
     # Close old socket and open a new one
     :ok = ListenerSupervisor.drop(session_id)
     {:ok, _} = ListenerSupervisor.pop(session_id)
 
     # Generate a new authorization key if necessary
-    dc = Registry.get(:dc, dc_id)
-
-    if dc.auth_key == <<0::8*8>> do
+    if DC.get(dc_id).auth_key == <<0::8*8>> do
       Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
       MTProto.Auth.generate(session_id)
     end
@@ -82,7 +105,7 @@ defmodule MTProto.Session do
   def close(session_id) do
     :ok = ListenerSupervisor.drop(session_id)
     :ok = HandlerSupervisor.drop(session_id)
-    Registry.drop :session, session_id
+    Session.drop(session_id)
   end
 
   @doc """
@@ -91,7 +114,7 @@ defmodule MTProto.Session do
   by specifying :plain as third argument.
   """
   def send(session_id, message, type \\ :encrypted) do
-    session = Registry.get :session, session_id
+    session = Session.get(session_id)
     call = if type == :plain, do: :send_plain, else: :send
     Kernel.send session.handler, {call, message}
   end
@@ -101,6 +124,6 @@ defmodule MTProto.Session do
   messages on session `session_id`.
   """
   def set_client(session_id, client) do
-    Registry.set(:session, session_id, :client, client)
+    Session.update(session_id, client: client)
   end
 end

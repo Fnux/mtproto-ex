@@ -1,6 +1,6 @@
 defmodule MTProto do
+  alias MTProto.{DC, Session, Auth, API}
   require Logger
-  alias MTProto.{Registry, DC, Session, Auth, API}
 
   @moduledoc """
   MTProto implementation for Elixir. At this time, the project is still far
@@ -58,6 +58,7 @@ key).
     if api_hash == nil, do: Logger.error "API_HASH is not set !"
 
     # Start
+    Logger.info "Starting Telegram MT."
     out = MTProto.Supervisor.start_link
 
     # Register DCs
@@ -77,7 +78,7 @@ key).
   def connect(dc_id \\ :random) do
     dc_id = if dc_id == :random, do: :rand.uniform(5), else: dc_id
     session_id = Session.open(dc_id)
-    dc = Registry.get(:dc, dc_id)
+    dc = DC.get(dc_id)
 
     if dc.auth_key == <<0::8*8>> do
       Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
@@ -106,7 +107,7 @@ key).
   """
   def sign_in(session_id, phone, code, code_hash \\ :session) do
     code_hash = if code_hash == :session do
-      session = Registry.get :session, session_id
+      session = Session.get(session_id)
       session.phone_code_hash
     else
       code_hash
@@ -165,7 +166,7 @@ key).
   and the version of API layer to use.
   """
   def send_with_initialization(session_id, msg) do
-    session = Registry.get(:session, session_id)
+    session = Session.get(session_id)
     unless session.initialized? do
       api_layer = TL.Schema.api_layer_version
       init_connection = init_connection_with("en", msg)

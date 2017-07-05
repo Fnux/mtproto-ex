@@ -46,10 +46,8 @@ the "standard" user hence not documented here.
   `MTProto.Method`, `MTProto.Payload`, `MTProto.Registry`,
   `MTProto.Supervisor` and `MTProto.TCP`.
 
-![observer](http://git.fnux.ch/telegram-mt-elixir/plain/observer.png "Observer - 1 session")
-
 Each session has one listener and one handler (they are registered in the
-`:session` registry). The `:dc` registry saves the data related to each specific DC
+`SessionRegistry` registry). The `DCRegistry` registry saves the data related to each specific DC
 (Telegram uses 5 DCs) such as the address or the authorization key.
 
 ## Example

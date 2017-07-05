@@ -3,11 +3,18 @@ defmodule MTProto.Crypto do
 
   # Provide crypto utils related to MTProto.
   @moduledoc false
-  @key "public.key"
+  @default_key Path.join(:code.priv_dir(:telegram_mt), "public.key")
+
+  # Allow to specify custom public key via config.exs
+  # Especially useful with escript since it does not support `priv`
+  def get_public_key do
+    config = Application.get_env :telegram_mt, :public_key
+    if config, do: config, else: @default_key
+  end
 
   # Get the components of the server's public key
   def get_key do
-    {_, key} = Path.join(:code.priv_dir(:telegram_mt), @key) |> File.read
+    {_, key} = get_public_key() |> File.read
     [raw] = :public_key.pem_decode key
     {:RSAPublicKey,n,e} = :public_key.pem_entry_decode raw
     {e ,n}

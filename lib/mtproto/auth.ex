@@ -1,6 +1,6 @@
 defmodule MTProto.Auth do
   require Logger
-  alias MTProto.{Method,Crypto,Session,DC}
+  alias MTProto.{Method,Crypto,Session}
   alias MTProto.Session.Handler
   alias TL.Binary
 
@@ -94,11 +94,11 @@ defmodule MTProto.Auth do
     salt_right = session.server_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
     server_salt = :erlang.bxor salt_left, salt_right
 
-    DC.update(session.dc, %{auth_key: auth_key, server_salt: server_salt})
+    result = %{auth_key: auth_key, server_salt: server_salt}
 
     # Clean session's registry from temporary values
-    map = %{server_nonce: nil, new_nonce: nil, g_a: nil, dh_prine: nil}
-    Session.set(session_id, struct(session, map))
+    temp = %{server_nonce: nil, new_nonce: nil, g_a: nil, dh_prine: nil}
+    Session.update(session_id, Map.merge(temp, result))
 
     Logger.debug "The authorization key was successfully generated."
     # Send notification to the client ?

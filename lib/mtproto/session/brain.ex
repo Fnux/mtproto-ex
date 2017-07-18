@@ -1,5 +1,5 @@
 defmodule MTProto.Session.Brain do
-  alias MTProto.{Auth, Session, DC}
+  alias MTProto.{Auth, Session}
   alias MTProto.Session.Handler
   require Logger
 
@@ -36,6 +36,10 @@ defmodule MTProto.Session.Brain do
         "auth.sentCode" ->
           hash = Map.get result, :phone_code_hash
           Session.update(session_id, phone_code_hash: hash)
+        "auth.authorization" ->
+          Logger.debug "Session #{session_id} is now logged in !"
+          user_id = Map.get(result, :user) |> Map.get(:id)
+          Session.update(session_id, user_id: user_id)
         "rpc_error" -> handle_rpc_error(session_id, result)
           _ -> :noop
       end
@@ -65,10 +69,9 @@ defmodule MTProto.Session.Brain do
     case error_code do
       -404 ->
         session = Session.get(session_id)
-        dc = DC.get(session.dc)
-        if dc.auth_key == <<0::8*8>> do
+        if session.auth_key == <<0::8*8>> do
           Logger.debug "[MT][Brain] I received a -404 error. I still don't have an auth key
-          for this DC (#{dc.id}) so I'm going to generate one ! I'm a workaround ;("
+          for this DC (#{session.dc}) so I'm going to generate one ! I'm a workaround ;("
           Auth.req_pq(session_id)
         end
         _ -> Logger.warn "[MT][Brain] Unknown error : #{error_code}"

@@ -1,6 +1,6 @@
 defmodule MTProto.Session.Handler do
   require Logger
-  alias MTProto.{TCP, Crypto, Session, DC, Payload}
+  alias MTProto.{TCP, Crypto, Session, Payload}
   alias MTProto.Session.Brain
 
   @moduledoc false
@@ -35,10 +35,7 @@ defmodule MTProto.Session.Handler do
           {map, _} = payload |> Payload.parse(:plain)
           {map, :plain}
         else
-          # Encrypted message
-          dc = DC.get session.dc
-
-          decrypted = payload |> Crypto.decrypt_message(dc.auth_key)
+          decrypted = payload |> Crypto.decrypt_message(session.auth_key)
           #msg_seqno = :binary.part(decrypted, 24, 4) |> TL.deserialize(:int)
 
           {map, _} = decrypted |> Payload.parse(:encrypted)
@@ -56,15 +53,15 @@ defmodule MTProto.Session.Handler do
   end
 
   # Send a plain message
-  def handle_info({:send_plain, payload}, session_id) do
-    send_plain(payload, session_id)
-    {:noreply, session_id}
+  def handle_call({:send_plain, payload}, _from,  session_id) do
+    {status, info} = send_plain(payload, session_id)
+    {:reply, {status, info}, session_id}
   end
 
   # Send an encrypted_message
-  def handle_info({:send, payload}, session_id) do
-    send_encrypted(payload, session_id)
-    {:noreply, session_id}
+  def handle_call({:send, payload}, _from, session_id) do
+    {status, info} = send_encrypted(payload, session_id)
+    {:reply, {status, info}, session_id}
   end
 
   def send_plain(payload, session_id) do
@@ -78,12 +75,12 @@ defmodule MTProto.Session.Handler do
 
     # Update the sequence number
     Session.set session_id, struct(session, seqno: session.seqno + 1)
+
+    {:ok, msg_id}
   end
 
   def send_encrypted(payload, session_id) do
     session = Session.get session_id
-    dc = DC.get session.dc
-
     msg_id = Payload.generate_id()
     msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
       Logger.warn "Message ID overlap ! Generating with offset..."
@@ -96,13 +93,15 @@ defmodule MTProto.Session.Handler do
     msg_seqno = (session.msg_seqno * 2 + 1)
     payload = Payload.wrap(payload, msg_id, msg_seqno)
 
-    if dc.auth_key != <<0::8*8>> && dc.auth_key != nil do
-      encrypted_msg = Crypto.encrypt_message(dc.auth_key, dc.server_salt, session_id, payload)
+    if session.auth_key != <<0::8*8>> && session.auth_key != nil do
+      encrypted_msg = Crypto.encrypt_message(session.auth_key, session.server_salt, session_id, payload)
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
       # Update the sequence numbers
       map = %{msg_seqno: session.msg_seqno + 1, seqno: session.seqno + 1}
       Session.set session_id, struct(session, map)
+
+      {:ok, msg_id}
     else
       {:error, "Auth key does not exist"}
     end

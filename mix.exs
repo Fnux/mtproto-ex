@@ -23,7 +23,7 @@ defmodule MTProto.Mixfile do
   #
   # Type "mix help compile.app" for more information
   def application do
-    [applications: [:logger, :crypto]]
+    [applications: [:logger, :crypto, :telegram_tl]]
   end
 
   # Dependencies can be Hex packages:

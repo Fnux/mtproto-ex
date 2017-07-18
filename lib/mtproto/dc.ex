@@ -20,9 +20,7 @@ defmodule MTProto.DC do
 
   defstruct id: nil,
             address: nil,
-            port: 443,
-            auth_key: <<0::8*8>>,
-            server_salt: 0
+            port: 443
 
   ####
   # Registry access
@@ -48,19 +46,5 @@ defmodule MTProto.DC do
       {id, addr} = dc
       DC.set id, struct(DC, %{dc: id, address: addr})
     end
-  end
-
-  @doc """
-  Export the authorization key for DC `dc_id`.
-  """
-  def export_authorization_key(dc_id) do
-    DC.get(dc_id).auth_key
-  end
-
-  @doc """
-  Import `auth_key` as the authorization key for DC `dc_id`.
-  """
-  def import_authorization_key(dc_id, auth_key) do
-    DC.update dc_id, auth_key: auth_key
   end
 end

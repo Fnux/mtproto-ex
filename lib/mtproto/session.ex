@@ -1,6 +1,6 @@
 defmodule MTProto.Session do
   require Logger
-  alias MTProto.{Crypto, Registry, Session, DC}
+  alias MTProto.{Crypto, Registry, Session, Auth, API}
   alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
 
   @table SessionRegistry
@@ -28,7 +28,10 @@ defmodule MTProto.Session do
   * `:socket` - socket used to receive and send message (to Telegram's servers)
   """
 
-  defstruct handler: nil,
+  defstruct auth_key: <<0::8*8>>,
+    server_salt: 0,
+    user_id: nil,
+    handler: nil,
     listener: nil,
     dc: nil,
     initialized?: false,
@@ -92,8 +95,9 @@ defmodule MTProto.Session do
     {:ok, _} = ListenerSupervisor.pop(session_id)
 
     # Generate a new authorization key if necessary
-    if DC.get(dc_id).auth_key == <<0::8*8>> do
-      Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
+    if Session.get(session_id).auth_key == <<0::8*8>> do
+      Logger.debug "No authorization key found for session #{session_id}.
+      Requesting..."
       MTProto.Auth.generate(session_id)
     end
   end
@@ -116,7 +120,7 @@ defmodule MTProto.Session do
   def send(session_id, message, type \\ :encrypted) do
     session = Session.get(session_id)
     call = if type == :plain, do: :send_plain, else: :send
-    Kernel.send session.handler, {call, message}
+    GenServer.call session.handler, {call, message}
   end
 
   @doc """
@@ -125,5 +129,30 @@ defmodule MTProto.Session do
   """
   def set_client(session_id, client) do
     Session.update(session_id, client: client)
+  end
+
+  @doc """
+  @todo
+  """
+  def request_authorization_key(session_id) do
+    Auth.generate(session_id)
+  end
+
+  @doc """
+  Export the authorization key for a session.
+  """
+  def export_authorization_key(session_id) do
+    session = Session.get(session_id)
+    {session.user_id, session.auth_key}
+  end
+
+  @doc """
+  Import `auth_key` as the authorization key for a session.
+  """
+  def import_authorization_key(session_id, user_id, auth_key) do
+    Session.update session_id, auth_key: auth_key
+    query = API.Auth.import_authorization(user_id, auth_key)
+
+    Session.send session_id, query, :plain
   end
 end

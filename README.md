@@ -56,32 +56,47 @@ Each session has one listener and one handler (they are registered in the
 » iex -S mix
 
 Interactive Elixir (1.4.0) - press Ctrl+C to exit (type h() ENTER for help)
+iex(1)> MTProto.start()
+
+09:41:19.160 [info]  Starting Telegram MT.
+{:ok, #PID<0.164.0>}
+
 iex> {:ok, session_id} = MTProto.connect(4) # Connect to DC 4
-{:ok, 0000000000000000000}
 
-19:10:07.231 [info]  The authorization key was successfully generated.
+09:42:02.934 [debug] [Handler] 5144610857678255187 : starting handler.
+09:42:02.935 [debug] [Listener] 5144610857678255187 : starting listener.
+{:ok, 5144610857678255187}
 
-iex> MTProto.send_code(session_id, "0041000000000")
-No client for 0000000000000000000, printing to console.
-{0000000000000000000,
- %{name: "rpc_result", req_msg_id: 0000000000000000000,
+iex> MTProto.authenticate(session_id)
+
+09:43:21.153 [debug] Requesting authorization key for session 5144610857678255187...
+09:43:21.993 [debug] The authorization key was successfully generated.
+
+iex> MTProto.send_code(session_id, "0041123456789")
+
+No client for 5144610857678255187, printing to console.
+{5144610857678255187,
+ %{msg_id: 6444013746561167361, name: "rpc_result",
+   req_msg_id: 6444013745160060928,
    result: %{is_password: %{name: "boolFalse"}, name: "auth.sentCode",
-     phone_code_hash: "000000000000000000",
+     phone_code_hash: "qwertzuiopasdfg123",
      phone_registered: %{name: "boolTrue"}, send_call_timeout: 120}}}
 
-iex> MTProto.sign_in(session_id, "0041000000000", "00000")
-No client for 0000000000000000000, printing to console.
-{0000000000000000000,
- %{name: "rpc_result", req_msg_id: 0000000000000000000,
-   result: %{expires: 0000000000, name: "auth.authorization",
-     user: %{first_name: "XXXX", id: 000000000, inactive: %{name: "boolFalse"},
-       last_name: "", name: "userSelf", phone: "41000000000",
+iex> MTProto.sign_in(session_id, "0041123456789", "01234")
+
+No client for 5144610857678255187, printing to console.
+{5144610857678255187,
+ %{msg_id: 6444014010308812801, name: "rpc_result",
+   req_msg_id: 6444014007153065984,
+   result: %{expires: 2147483647, name: "auth.authorization",
+     user: %{first_name: "Fnux", id: 122205918, inactive: %{name: "boolFalse"},
+       last_name: "", name: "userSelf", phone: "41123456789",
        photo: %{name: "userProfilePhoto",
-         photo_big: %{dc_id: 4, local_id: 00000, name: "fileLocation",
-           secret: 0000000000000000000, volume_id: 000000000},
-         photo_id: 000000000000000000,
-         photo_small: %{dc_id: 4, local_id: 00000, name: "fileLocation",
-           secret: 0000000000000000000, volume_id: 000000000}},
-       status: %{name: "userStatusOffline", was_online: 0000000000},
-       username: "xxxxxxx"}}}}
+         photo_big: %{dc_id: 4, local_id: 52832, name: "fileLocation",
+           secret: 01234567890123456789, volume_id: 430507451},
+         photo_id: 524870421643897743,
+         photo_small: %{dc_id: 4, local_id: 52830, name: "fileLocation",
+           secret: 123456789012345678, volume_id: 430507451}},
+       status: %{name: "userStatusOffline", was_online: 1500363697},
+       username: "fnux_ch"}}}}
 ```

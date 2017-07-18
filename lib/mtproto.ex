@@ -1,5 +1,5 @@
 defmodule MTProto do
-  alias MTProto.{DC, Session, Auth, API}
+  alias MTProto.{DC, Session, API}
   require Logger
 
   @moduledoc """
@@ -40,14 +40,21 @@ defmodule MTProto do
   def connect(dc_id \\ :random) do
     dc_id = if dc_id == :random, do: :rand.uniform(5), else: dc_id
     session_id = Session.open(dc_id)
-    dc = DC.get(dc_id)
-
-    if dc.auth_key == <<0::8*8>> do
-      Logger.debug "No authorization key found for DC #{dc_id}. Requesting..."
-      Auth.generate(session_id)
-    end
 
     {:ok, session_id}
+  end
+
+  @doc """
+  @TODO
+  """
+  def authenticate(session_id, user_id \\ 0, auth_key \\ <<0::8*8>>) do
+    unless auth_key == <<0::8*8>> do
+      Logger.debug "Importing authorization key for session #{session_id}..."
+      Session.import_authorization_key(session_id, user_id, auth_key)
+    else
+      Logger.debug "Requesting authorization key for session #{session_id}..."
+      Session.request_authorization_key(session_id)
+    end
   end
 
   @doc """

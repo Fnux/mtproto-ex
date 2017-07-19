@@ -67,7 +67,7 @@ iex> {:ok, session_id} = MTProto.connect(4) # Connect to DC 4
 09:42:02.935 [debug] [Listener] 5144610857678255187 : starting listener.
 {:ok, 5144610857678255187}
 
-iex> MTProto.authenticate(session_id)
+iex> MTProto.request_authkey(session_id)
 
 09:43:21.153 [debug] Requesting authorization key for session 5144610857678255187...
 09:43:21.993 [debug] The authorization key was successfully generated.

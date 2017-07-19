@@ -1,6 +1,6 @@
 defmodule MTProto.Session do
   require Logger
-  alias MTProto.{Crypto, Registry, Session, Auth, API}
+  alias MTProto.{Crypto, Registry, Session}
   alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
 
   @table SessionRegistry
@@ -10,11 +10,16 @@ defmodule MTProto.Session do
   ## Session
 
   ```
-  %MTProto.Session{client: nil, dc: nil, handler: nil, initialized?: false,
-  listener: nil, msg_seqno: 0, phone_code_hash: nil, seqno: 0, socket: 0}
+  %MTProto.Session{auth_key: <<0, 0, 0, 0, 0, 0, 0, 0>>, b: nil, client: nil,
+  dc: nil, dh_prime: nil, g_a: nil, handler: nil, initialized?: false,
+  last_msg_id: 0, listener: nil, msg_seqno: 0, new_nonce: nil,
+  phone_code_hash: nil, seqno: 0, server_nonce: nil, server_salt: 0, socket: 0,
+  user_id: nil}
 
   ```
-
+  * `:user_id` - Telegram ID of the user
+  * `:auth_key` - authorization key, default to `<<0::8*8>>`
+  * `server_salt` - default to `0`
   * `:handler` - PID of the process handling messages (parse, dispatch, send);
   * `:listener` - PID of the process listening for incoming messages
   * `:dc` - id of the datacenter used by the session (1,2,3,4,5). See
@@ -129,13 +134,6 @@ defmodule MTProto.Session do
   """
   def set_client(session_id, client) do
     Session.update(session_id, client: client)
-  end
-
-  @doc """
-  @todo
-  """
-  def request_authorization_key(session_id) do
-    Auth.generate(session_id)
   end
 
   @doc """

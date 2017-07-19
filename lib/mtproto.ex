@@ -1,14 +1,15 @@
 defmodule MTProto do
-  alias MTProto.{DC, Session, API}
+  alias MTProto.{DC, Session, API, Auth}
   require Logger
 
   @moduledoc """
   MTProto implementation for Elixir. Base module.
+
+  This module provides "high-level" functions for common tasks.
   """
 
   @doc """
     Start the supervision tree and set default values in the registry.
-    Automatically started.
   """
   def start(), do: start(nil, nil)
   def start(_type, _args) do
@@ -45,11 +46,11 @@ defmodule MTProto do
   end
 
   @doc """
-  @TODO
+  Launch the Authorization Key computation sequence.
   """
-  def authenticate(session_id) do
+  def request_authkey(session_id) do
     Logger.debug "Requesting authorization key for session #{session_id}..."
-    Session.request_authorization_key(session_id)
+    Auth.generate(session_id)
   end
 
   @doc """

@@ -15,8 +15,6 @@ defmodule MTProto.DC do
   * `:id` - id  of the dc
   * `:address` - address of the dc
   * `:port` - port of the dc, default to `443`
-  * `:auth_key` - authorization key, default to `<<0::8*8>>`
-  * `server_salt` - default to `0`
   """
 
   defstruct id: nil,

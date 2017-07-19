@@ -139,20 +139,19 @@ defmodule MTProto.Session do
   end
 
   @doc """
-  Export the authorization key for a session.
+  Export `{user_id, auth_key, server_salt}` from a session.
   """
-  def export_authorization_key(session_id) do
+  def export(session_id) do
     session = Session.get(session_id)
-    {session.user_id, session.auth_key}
+    {session.user_id, session.auth_key, session.server_salt}
   end
 
   @doc """
-  Import `auth_key` as the authorization key for a session.
+  Import `user_id`, `auth_key` and `server_salt` to a session.
   """
-  def import_authorization_key(session_id, user_id, auth_key) do
-    Session.update session_id, auth_key: auth_key
-    query = API.Auth.import_authorization(user_id, auth_key)
-
-    Session.send session_id, query, :plain
+  def import(session_id, user_id, auth_key, server_salt) do
+    Session.update session_id, %{
+      user_id: user_id, auth_key: auth_key, server_salt: server_salt
+    }
   end
 end

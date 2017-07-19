@@ -47,14 +47,9 @@ defmodule MTProto do
   @doc """
   @TODO
   """
-  def authenticate(session_id, user_id \\ 0, auth_key \\ <<0::8*8>>) do
-    unless auth_key == <<0::8*8>> do
-      Logger.debug "Importing authorization key for session #{session_id}..."
-      Session.import_authorization_key(session_id, user_id, auth_key)
-    else
-      Logger.debug "Requesting authorization key for session #{session_id}..."
-      Session.request_authorization_key(session_id)
-    end
+  def authenticate(session_id) do
+    Logger.debug "Requesting authorization key for session #{session_id}..."
+    Session.request_authorization_key(session_id)
   end
 
   @doc """

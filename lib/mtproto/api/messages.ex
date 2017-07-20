@@ -232,7 +232,7 @@ defmodule MTProto.API.Messages do
   * `chats` - list of chats IDs
   """
   def get_chats(chats) do
-    TL.build("messages.chats", %{id: chats})
+    TL.build("messages.getChats", %{id: chats})
   end
 
   @doc """
@@ -241,7 +241,7 @@ defmodule MTProto.API.Messages do
   * `chat` - ID of the chat (integer)
   """
   def get_full_chats(chat) do
-    TL.build("messages.chats", %{chat_id: chat})
+    TL.build("messages.getFullChat", %{chat_id: chat})
   end
 
   @doc """
@@ -251,7 +251,7 @@ defmodule MTProto.API.Messages do
   * `title` - new title of the chat (string)
   """
   def edit_chat_title(chat, title) do
-    TL.build("messages.chats", %{chat_id: chat, title: title})
+    TL.build("messages.editChatTitle", %{chat_id: chat, title: title})
   end
 
   @doc """

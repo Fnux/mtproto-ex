@@ -120,7 +120,10 @@ defmodule MTProto.Session do
   @doc """
   Send a message to telegram's servers on session `session_id`. Default
   behavior is to send an encrypted message : you can send a plaintext message
-  by specifying :plain as third argument.
+  by specifying :plain as third argument. Returns :
+
+  * `{:ok, message_id}`
+  * `{:err, reason}`
   """
   def send(session_id, message, type \\ :encrypted) do
     session = Session.get(session_id)

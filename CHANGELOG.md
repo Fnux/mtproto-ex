@@ -1,5 +1,19 @@
 # Changelog for telegram_mt (telegram-mt-elixir)
 
+## v0.0.3-alpha (2017-??-??)
+
+* Do not automatically start (see `MTProto.start`)
+* Fix application name used in config
+* Update telegram_tl dependency
+* Major refactoring of the registry
+* Notify the clients with `{:tg, ...}` (instead of `:recv`)
+* Allow to specify external public key (useful for escript)
+* Use a single authkey per session (allows multiple sessions per DC)
+* Allow to export/import the session parameters (= allow to restore a session)
+* Sending messages is now synchronous (`GenServer.call`)
+* Minor documentation improvements
+* Minor API changes
+
 ## v0.0.2-alpha (2017-05-06)
 
 * Populate the `MTProto.API.X` modules given the

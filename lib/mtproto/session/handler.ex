@@ -85,7 +85,7 @@ defmodule MTProto.Session.Handler do
     msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
       Logger.warn "Message ID overlap ! Generating with offset..."
       Payload.generate_id(1)
-    else 
+    else
       msg_id
     end
 
@@ -103,7 +103,7 @@ defmodule MTProto.Session.Handler do
 
       {:ok, msg_id}
     else
-      {:error, "Auth key does not exist"}
+      {:err, "Auth key does not exist"}
     end
   end
 

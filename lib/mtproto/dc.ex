@@ -2,7 +2,7 @@ defmodule MTProto.DC do
   alias MTProto.{Registry, DC}
 
   @table DCRegistry
-  @dcs [{:test, "149.154.167.40"},
+  @dcs [{0, "149.154.167.40"}, # test DC
         {1, "149.154.175.50"},
         {2, "149.154.167.51"},
         {3, "149.154.175.100"},

@@ -1,6 +1,8 @@
 # Changelog for telegram_mt (telegram-mt-elixir)
 
-## v0.0.3-alpha (2017-??-??)
+## v0.0.4-alpha (????-??-??)
+
+## v0.0.3-alpha (2017-07-20)
 
 * Do not automatically start (see `MTProto.start`)
 * Fix application name used in config

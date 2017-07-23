@@ -85,14 +85,6 @@ defmodule MTProto.Session.Brain do
 
     Logger.warn "[MT][Brain] RPC error : #{error_code} | #{error_message}"
     case error_code do
-      303 -> # 303 ERROR_SEE_OTHER
-      if error_message =~ ~r/^PHONE_MIGRATE_(\d)$/ do # PHONE_MIGRATE_X
-        dc_id = Regex.run(~r/^PHONE_MIGRATE_(\d)$/, error_message)
-                  |> List.last
-                  |> String.to_integer
-        # Automatically reconnectto the new DC
-        Session.reconnect(session_id, dc_id)
-      end
       _ -> :noop
     end
   end

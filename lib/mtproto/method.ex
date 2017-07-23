@@ -121,6 +121,11 @@ defmodule MTProto.Method do
     :crypto.block_encrypt :aes_ige256, tmp_aes_key, tmp_aes_iv, data_with_hash
   end
 
+  #
+  def get_future_salts(num) do
+    TL.build("get_future_salts", %{num: num})
+  end
+
   ####################
   # Service Messages #
   ####################

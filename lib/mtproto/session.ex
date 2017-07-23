@@ -86,25 +86,13 @@ defmodule MTProto.Session do
   end
 
   @doc """
-  Close the current connection to Telegram's server and open a new one to
-  the given DC.
-
-  * `dc_id` - ID of the DC to connect.
+  Close the current connection to Telegram's server and open a new one.
+  Sessions (`user_id`, `authkey`, `server_salt`) are conserved.
   """
-  def reconnect(session_id, dc_id) do
-    # Update session's DC
-    Session.update(session_id, dc: dc_id)
-
-    # Close old socket and open a new one
+  def reconnect(session_id) do
+    # Close old listener (=> socket) and open a new one
     :ok = ListenerSupervisor.drop(session_id)
     {:ok, _} = ListenerSupervisor.pop(session_id)
-
-    # Generate a new authorization key if necessary
-    if Session.get(session_id).auth_key == <<0::8*8>> do
-      Logger.debug "No authorization key found for session #{session_id}.
-      Requesting..."
-      MTProto.Auth.generate(session_id)
-    end
   end
 
   @doc """

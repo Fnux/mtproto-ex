@@ -28,26 +28,31 @@ defmodule MTProto.Session.Brain do
     name = Map.get(msg, :name)
 
     # Process RPC
-    if name == "rpc_result" do
-      result = Map.get msg, :result
-      name = result |> Map.get(:name)
+    case name do
+      "rpc_result" ->
+        result = Map.get msg, :result
+        name = result |> Map.get(:name)
 
-      case name do
-        "auth.sentCode" ->
-          hash = Map.get result, :phone_code_hash
-          Session.update(session_id, phone_code_hash: hash)
-        "auth.authorization" ->
-          Logger.debug "Session #{session_id} is now logged in !"
-          user_id = Map.get(result, :user) |> Map.get(:id)
-          Session.update(session_id, user_id: user_id)
-        "rpc_error" -> handle_rpc_error(session_id, result)
+        case name do
+          "auth.sentCode" ->
+            hash = Map.get result, :phone_code_hash
+            Session.update(session_id, phone_code_hash: hash)
+          "auth.authorization" ->
+            Logger.debug "Session #{session_id} is now logged in !"
+            user_id = Map.get(result, :user) |> Map.get(:id)
+            Session.update(session_id, user_id: user_id)
+          "rpc_error" -> handle_rpc_error(session_id, result)
           _ -> :noop
-      end
+        end
 
-      # ACK
-      msg_ids = [Map.get(msg, :msg_id)]
-      ack = MTProto.Method.msgs_ack(msg_ids)
-      Handler.send_encrypted(ack, session_id)
+        # ACK
+        msg_ids = [Map.get(msg, :msg_id)]
+        ack = MTProto.Method.msgs_ack(msg_ids)
+        Handler.send_encrypted(ack, session_id)
+      "bad_server_salt" ->
+        new_server_salt = Map.get(msg, :new_server_salt)
+        Session.update session_id, server_salt: new_server_salt
+      _ -> :noop
     end
 
     # Notify the client
@@ -79,7 +84,7 @@ defmodule MTProto.Session.Brain do
   end
 
   # Handle errors for encrypted messages
-  defp handle_rpc_error(session_id, rpc_result) do
+  defp handle_rpc_error(_session_id, rpc_result) do
     error_code = Map.get(rpc_result, :error_code)
     error_message = Map.get(rpc_result, :error_message)
 

@@ -60,7 +60,7 @@ defmodule MTProto.Session.Brain do
       send session.client, {:tg, session_id, msg}
     else
       IO.puts "No client for #{session_id}, printing to console."
-      IO.inspect {session_id, msg}
+      IO.inspect {session_id, msg}, limit: :infinity
     end
   end
 

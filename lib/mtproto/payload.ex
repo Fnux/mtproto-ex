@@ -22,7 +22,7 @@ defmodule MTProto.Payload do
     content = Map.get map, :message_content
     message_id = Map.get map, :message_id
 
-    IO.inspect {container, content}, limit: :infinity
+    #IO.inspect {container, content}, limit: :infinity
 
     {map, tail} = TL.parse(container, content)
     {Map.put(map, :msg_id, message_id), tail}

@@ -92,7 +92,9 @@ defmodule MTProto.Auth do
     # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
     salt_left = session.new_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
     salt_right = session.server_nonce |> Binary.encode_signed |> :binary.part(0, 8) |> Binary.decode_signed
-    server_salt = :erlang.bxor salt_left, salt_right
+    # The server salt is represented as 'long' in MTProto's Schema, hence must be stored as a 'long' in
+    # order to avoid endianess mismatch
+    server_salt = :erlang.bxor(salt_left, salt_right) |> TL.serialize(:long)
 
     result = %{auth_key: auth_key, server_salt: server_salt}
 

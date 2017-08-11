@@ -81,7 +81,9 @@ defmodule MTProto.Session.Handler do
 
   def send_encrypted(payload, session_id) do
     session = Session.get session_id
+
     msg_id = Payload.generate_id()
+    # bad_msg_notification workaround
     msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
       Logger.warn "Message ID overlap ! Generating with offset..."
       Payload.generate_id(1)

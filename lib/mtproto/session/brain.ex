@@ -30,6 +30,7 @@ defmodule MTProto.Session.Brain do
     # Process RPC
     case name do
       "rpc_result" ->
+        req_msg_id = Map.get(msg, :req_msg_id)
         result = Map.get msg, :result
         name = result |> Map.get(:name)
 
@@ -45,13 +46,38 @@ defmodule MTProto.Session.Brain do
           _ -> :noop
         end
 
+        # Remove req_msg_id from 'sent' queue
+        History.dequeue session_id, req_msg_id
+
         # ACK
         msg_ids = [Map.get(msg, :msg_id)]
         ack = MTProto.Method.msgs_ack(msg_ids)
         Handler.send_encrypted(ack, session_id)
+      "bad_msg_notification" ->
+        error_code = Map.get(msg, :error_code)
+        case error_code do
+          32 -> Logger.warn "msg_seqno too low : #{msg.bad_msg_id}"
+          _ -> :noop
+        end
+        IO.puts "BAD MSi notification : #{error_code}"
       "bad_server_salt" ->
         new_server_salt = Map.get(msg, :new_server_salt)
-        Session.update session_id, server_salt: new_server_salt
+        bad_msg_id = Map.get(msg, :bad_msg_id)
+
+        # Note : store server_salt in serialized 'long' (little endian) in order
+        # to avoid endianess hell
+        Session.update session_id, server_salt: TL.serialize(new_server_salt, :long)
+
+        # Get 'bad' message content
+        content = History.fetch(session_id, bad_msg_id)
+
+        # Resend message with updated server_salt
+        # Direct call to the handler to avoid "bad_server_salt" loops
+        # in case of repetive error
+        if content do
+          History.dequeue session_id, bad_msg_id # in order to avoid loops
+          Handler.send_encrypted content, session_id
+        end
       _ -> :noop
     end
 

@@ -33,8 +33,8 @@ defmodule MTProto.Session do
   * `:socket` - socket used to receive and send message (to Telegram's servers)
   """
 
-  defstruct auth_key: <<0::8*8>>,
-    server_salt: 0,
+  defstruct auth_key: <<0::8*256>>,
+    server_salt: <<0::8*8>>,
     user_id: nil,
     handler: nil,
     listener: nil,

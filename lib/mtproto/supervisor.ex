@@ -17,6 +17,7 @@ defmodule MTProto.Supervisor do
       worker(MTProto.Registry, [SessionRegistry], [restart: :permanent, id: SessionRegistry]),
       supervisor(MTProto.Session.HandlerSupervisor, [], [restart: :permanent]),
       supervisor(MTProto.Session.ListenerSupervisor, [], [restart: :permanent]),
+      supervisor(MTProto.Session.HistorySupervisor, [], [restart: :permanent]),
     ]
 
     supervise(children, strategy: :one_for_one)

@@ -1,6 +1,6 @@
 defmodule MTProto.Session.Brain do
   alias MTProto.{Auth, Session}
-  alias MTProto.Session.Handler
+  alias MTProto.Session.{Handler, History}
   require Logger
 
   @moduledoc false

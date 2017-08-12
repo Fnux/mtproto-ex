@@ -16,7 +16,7 @@ the documentation is available [here](https://hexdocs.pm/telegram_mt/MTProto.htm
 
 ## Status & Roadmap
 
-Version `v0.0.3-alpha` has been released ([changelog](changelog.md)).
+Version `v0.1.0-alpha` has been released ([changelog](changelog.md)).
 
 **Status :** you currently can signin, receive and send message, fetch
 contacts and chats, save and restore sessions.

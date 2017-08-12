@@ -1,6 +1,13 @@
 # Changelog for telegram_mt (telegram-mt-elixir)
 
-## v0.0.4-alpha (????-??-??)
+## v0.1.0-alpha (2017-08-12)
+
+* Switching from API layer 23 to API layer 57 (allows to access supergroup and a bunch of others 'recent' telegram features)
+* Update telegram_tl dependency to v0.2.0-beta
+* Resend message in case of `bad_server_salt` or `bad_msg_notification` errors
+* History of recently sent messages
+* Handle `bad_server_salt` errors
+* Fix API calls to some chat-related methods
 
 ## v0.0.3-alpha (2017-07-20)
 

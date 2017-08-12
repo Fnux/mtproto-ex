@@ -1,5 +1,6 @@
 defmodule MTProto.Payload do
   @moduledoc false
+  @pow_2_32 :math.pow(2,32)
 
   #  Methods to encode/decode and wrap/unwrap payloads.
   #
@@ -86,6 +87,6 @@ defmodule MTProto.Payload do
 
   # Generate id for messages,  Unix time * 2^32
   def generate_id(offset \\ 0) do
-    (:os.system_time(:seconds) + offset) * :math.pow(2,32) |> round
+    (:os.system_time(:seconds) + offset) * @pow_2_32 |> round
   end
 end

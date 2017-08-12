@@ -4,6 +4,7 @@ defmodule MTProto.Session do
   alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor, History}
 
   @table SessionRegistry
+  @retry_max Application.get_env :telegram_mt, :msg_max_retry_count
   @moduledoc """
   Provide advanced control over sessions.
 
@@ -121,7 +122,10 @@ defmodule MTProto.Session do
     {status, msg_id} = GenServer.call session.handler, {call, message}
 
     # If the message was properly sent, enqueue it to the history
-    if status == :ok, do: History.enqueue(session_id, msg_id, message)
+    if status == :ok do
+      # @retry is the maximum number of retry, it allows to avid infinite error loops
+      History.put(session_id, msg_id, {@retry_max, message})
+    end
 
     {status, msg_id}
   end

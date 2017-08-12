@@ -10,7 +10,8 @@ use Mix.Config
 
 config :telegram_mt,
   api_id: "00000",
-  api_hash: "00000"
+  api_hash: "00000",
+  msg_max_retry_count: 2
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment

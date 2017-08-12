@@ -47,19 +47,21 @@ defmodule MTProto.Session.Brain do
         end
 
         # Remove req_msg_id from 'sent' queue
-        History.dequeue session_id, req_msg_id
+        History.drop session_id, req_msg_id
 
         # ACK
         msg_ids = [Map.get(msg, :msg_id)]
         ack = MTProto.Method.msgs_ack(msg_ids)
         Handler.send_encrypted(ack, session_id)
       "bad_msg_notification" ->
+        bad_msg_id = Map.get(msg, :bad_msg_id)
         error_code = Map.get(msg, :error_code)
         case error_code do
           32 -> Logger.warn "msg_seqno too low : #{msg.bad_msg_id}"
           _ -> :noop
         end
-        IO.puts "BAD MSi notification : #{error_code}"
+
+        retry(session_id, bad_msg_id)
       "bad_server_salt" ->
         new_server_salt = Map.get(msg, :new_server_salt)
         bad_msg_id = Map.get(msg, :bad_msg_id)
@@ -68,16 +70,7 @@ defmodule MTProto.Session.Brain do
         # to avoid endianess hell
         Session.update session_id, server_salt: TL.serialize(new_server_salt, :long)
 
-        # Get 'bad' message content
-        content = History.fetch(session_id, bad_msg_id)
-
-        # Resend message with updated server_salt
-        # Direct call to the handler to avoid "bad_server_salt" loops
-        # in case of repetive error
-        if content do
-          History.dequeue session_id, bad_msg_id # in order to avoid loops
-          Handler.send_encrypted content, session_id
-        end
+        retry(session_id, bad_msg_id)
       _ -> :noop
     end
 
@@ -117,6 +110,23 @@ defmodule MTProto.Session.Brain do
     Logger.warn "[MT][Brain] RPC error : #{error_code} | #{error_message}"
     case error_code do
       _ -> :noop
+    end
+  end
+
+  def retry(session_id, bad_msg_id) do
+    # Get 'bad' message content
+    result = History.get(session_id, bad_msg_id)
+    unless result do
+      Logger.warn("Error for message #{bad_msg_id} but not found in session history !")
+    else
+      {retry_count, content} = result
+
+      History.drop session_id, bad_msg_id # Remove existing message from history
+      if retry_count > 0 do
+        # Resend
+        {:ok, new_msg_id} = Handler.send_encrypted(content, session_id)
+        History.put session_id, new_msg_id, {retry_count - 1, content}
+      end
     end
   end
 end

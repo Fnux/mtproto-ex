@@ -22,6 +22,11 @@ defmodule MTProto.Session.Listener do
     map = %{seqno: 0, msg_seqno: 0, listener: self(), socket: socket}
     Session.set session_id, struct(session, map)
 
+    # Ping telegram servers using existing authorization key
+    if session.auth_key do
+      Session.send session_id, MTProto.Method.ping()
+    end
+
     # Start the listening loop
     send self(), :listen
 
@@ -34,7 +39,12 @@ defmodule MTProto.Session.Listener do
     session = Session.get(session_id)
 
     # Wait for incoming data
-    payload = TCP.recv(session.socket)
+    {status, payload} = TCP.recv(session.socket)
+
+    unless status == :ok do
+      # payload -> reason
+      terminate(session_id, payload)
+    end
 
     # Dispatch to the related handler
     send session.handler, {:recv, payload}

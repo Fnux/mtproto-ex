@@ -21,6 +21,24 @@ Version `v0.1.0-alpha` has been released ([changelog](changelog.md)).
 **Status :** you currently can signin, receive and send message, fetch
 contacts and chats, save and restore sessions.
 
+## Configuration
+
+Don't forget to add (and fill!) the following to your `config.exs` :
+
+```
+# You can find your API ID and API HASH on https://my.telegram.org/
+config :telegram_mt,
+  api_id: "00000", # Required.
+  api_hash: "00000", # Required.
+  msg_max_retry_count: 2, # Required. Maximum number of retry for a failed message.
+  public_key: "public_key" # Optional. Custom path for Telegram's public key.
+
+# Optional. Custom configuration for the `telegram_tl` library.
+config :telegram_tl, tl_path: "/path/to/mtproto.json",
+  api_version: 57,
+  api_path: "/path/to/api-layer-57.json"
+```
+
 ## Overview
 
 This library allows you to handle mutiple users, which is fondamental since

@@ -1,9 +1,10 @@
 defmodule MTProto.Session do
   require Logger
   alias MTProto.{Crypto, Registry, Session}
-  alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor}
+  alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor, History}
 
   @table SessionRegistry
+  @retry_max Application.get_env :telegram_mt, :msg_max_retry_count
   @moduledoc """
   Provide advanced control over sessions.
 
@@ -33,8 +34,8 @@ defmodule MTProto.Session do
   * `:socket` - socket used to receive and send message (to Telegram's servers)
   """
 
-  defstruct auth_key: <<0::8*8>>,
-    server_salt: 0,
+  defstruct auth_key: <<0::8*256>>,
+    server_salt: <<0::8*8>>,
     user_id: nil,
     handler: nil,
     listener: nil,
@@ -80,6 +81,7 @@ defmodule MTProto.Session do
     session_id = Crypto.rand_bytes(8)
     Session.set session_id, struct(Session, dc: dc_id, client: client)
 
+    {:ok, _} = History.pop(session_id)
     {:ok, _} = HandlerSupervisor.pop(session_id, dc_id)
     {:ok, _} = ListenerSupervisor.pop(session_id)
     session_id
@@ -100,6 +102,7 @@ defmodule MTProto.Session do
   session from the registry.
   """
   def close(session_id) do
+    :ok = History.drop(session_id)
     :ok = ListenerSupervisor.drop(session_id)
     :ok = HandlerSupervisor.drop(session_id)
     Session.drop(session_id)
@@ -116,7 +119,15 @@ defmodule MTProto.Session do
   def send(session_id, message, type \\ :encrypted) do
     session = Session.get(session_id)
     call = if type == :plain, do: :send_plain, else: :send
-    GenServer.call session.handler, {call, message}
+    {status, msg_id} = GenServer.call session.handler, {call, message}
+
+    # If the message was properly sent, enqueue it to the history
+    if status == :ok do
+      # @retry is the maximum number of retry, it allows to avid infinite error loops
+      History.put(session_id, msg_id, {@retry_max, message})
+    end
+
+    {status, msg_id}
   end
 
   @doc """

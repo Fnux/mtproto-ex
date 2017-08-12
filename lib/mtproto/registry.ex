@@ -43,6 +43,11 @@ defmodule MTProto.Registry do
     Agent.get(registry, fn(map) -> Map.get(map, key) end)
   end
 
+  # Return the key of every element stored in the registry.
+  def get_keys(registry) do
+    Agent.get(registry, fn(map) -> Map.keys(map) end)
+  end
+
   # Dump the whole registry (as a map).
   def dump(registry) do
     Agent.get(registry, fn(map) -> map end)

@@ -97,8 +97,9 @@ defmodule MTProto.Crypto do
   def encrypt_message(auth_key, server_salt, session_id, payload) do
     #auth_key = auth_key |> Build.encode_signed
 
-    msg = Binary.encode_signed(server_salt) <> Binary.encode_signed(session_id)
-                                            <> payload
+    # Note : server_salt is already stored in little endian
+    msg = server_salt <> Binary.encode_signed(session_id)
+                      <> payload
     msg_key = :crypto.hash(:sha, msg) |> :binary.part(4,16)
 
     # get encryption keys

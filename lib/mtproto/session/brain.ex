@@ -1,6 +1,6 @@
 defmodule MTProto.Session.Brain do
   alias MTProto.{Auth, Session}
-  alias MTProto.Session.Handler
+  alias MTProto.Session.{Handler, History}
   require Logger
 
   @moduledoc false
@@ -30,6 +30,7 @@ defmodule MTProto.Session.Brain do
     # Process RPC
     case name do
       "rpc_result" ->
+        req_msg_id = Map.get(msg, :req_msg_id)
         result = Map.get msg, :result
         name = result |> Map.get(:name)
 
@@ -45,13 +46,31 @@ defmodule MTProto.Session.Brain do
           _ -> :noop
         end
 
+        # Remove req_msg_id from 'sent' queue
+        History.drop session_id, req_msg_id
+
         # ACK
         msg_ids = [Map.get(msg, :msg_id)]
         ack = MTProto.Method.msgs_ack(msg_ids)
         Handler.send_encrypted(ack, session_id)
+      "bad_msg_notification" ->
+        bad_msg_id = Map.get(msg, :bad_msg_id)
+        error_code = Map.get(msg, :error_code)
+        case error_code do
+          32 -> Logger.warn "msg_seqno too low : #{msg.bad_msg_id}"
+          _ -> :noop
+        end
+
+        retry(session_id, bad_msg_id)
       "bad_server_salt" ->
         new_server_salt = Map.get(msg, :new_server_salt)
-        Session.update session_id, server_salt: new_server_salt
+        bad_msg_id = Map.get(msg, :bad_msg_id)
+
+        # Note : store server_salt in serialized 'long' (little endian) in order
+        # to avoid endianess hell
+        Session.update session_id, server_salt: TL.serialize(new_server_salt, :long)
+
+        retry(session_id, bad_msg_id)
       _ -> :noop
     end
 
@@ -91,6 +110,23 @@ defmodule MTProto.Session.Brain do
     Logger.warn "[MT][Brain] RPC error : #{error_code} | #{error_message}"
     case error_code do
       _ -> :noop
+    end
+  end
+
+  def retry(session_id, bad_msg_id) do
+    # Get 'bad' message content
+    result = History.get(session_id, bad_msg_id)
+    unless result do
+      Logger.warn("Error for message #{bad_msg_id} but not found in session history !")
+    else
+      {retry_count, content} = result
+
+      History.drop session_id, bad_msg_id # Remove existing message from history
+      if retry_count > 0 do
+        # Resend
+        {:ok, new_msg_id} = Handler.send_encrypted(content, session_id)
+        History.put session_id, new_msg_id, {retry_count - 1, content}
+      end
     end
   end
 end

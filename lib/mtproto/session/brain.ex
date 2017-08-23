@@ -56,8 +56,10 @@ defmodule MTProto.Session.Brain do
       "bad_msg_notification" ->
         bad_msg_id = Map.get(msg, :bad_msg_id)
         error_code = Map.get(msg, :error_code)
+
         case error_code do
           32 -> Logger.warn "msg_seqno too low : #{msg.bad_msg_id}"
+          33 -> Logger.warn "msg_seqno too high : #{msg.bad_msg_id}"
           _ -> :noop
         end
 

@@ -1,7 +1,8 @@
 defmodule MTProto.Session.Handler do
-  require Logger
   alias MTProto.{TCP, Crypto, Session, Payload}
   alias MTProto.Session.Brain
+  require Logger
+  require Integer
 
   @moduledoc false
 
@@ -40,6 +41,10 @@ defmodule MTProto.Session.Handler do
 
           {map, _} = decrypted |> Payload.parse(:encrypted)
           {map, :encrypted}
+        end
+
+        if Map.get(map, :msg_seqno) do
+          Session.set session_id, struct(session, msg_seqno: map.msg_seqno)
         end
 
         msg_id = Map.get map, :msg_id
@@ -83,16 +88,21 @@ defmodule MTProto.Session.Handler do
     session = Session.get session_id
 
     msg_id = Payload.generate_id()
-    # bad_msg_notification workaround
     msg_id = if msg_id <= session.last_msg_id do # workaround for issue #2
       Logger.warn "Message ID overlap ! Generating with offset..."
-      Payload.generate_id(1)
+      (session.last_msg_id + 4 ) |> Payload.fix_id()
     else
       msg_id
     end
 
     # Wrap as encrypted message
-    msg_seqno = (session.msg_seqno * 2 + 1)
+    msg_seqno = if Integer.is_even(session.msg_seqno) do
+      session.msg_seqno + 1
+    else
+      session.msg_seqno + 2
+    end
+
+    #IO.puts "Sending with MSG_ID: #{msg_id} and SEQNO #{msg_seqno}"
     payload = Payload.wrap(payload, msg_id, msg_seqno)
 
     if session.auth_key != <<0::8*8>> && session.auth_key != nil do
@@ -100,7 +110,8 @@ defmodule MTProto.Session.Handler do
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 
       # Update the sequence numbers
-      map = %{msg_seqno: session.msg_seqno + 1, seqno: session.seqno + 1}
+      map = %{msg_seqno: msg_seqno, seqno: session.seqno + 1}
+
       Session.set session_id, struct(session, map)
 
       {:ok, msg_id}

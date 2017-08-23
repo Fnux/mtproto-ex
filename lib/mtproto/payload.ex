@@ -18,15 +18,20 @@ defmodule MTProto.Payload do
   # Returns `{map, tail}`.
   def parse(msg, type \\ :encrypted) do
     #auth_key_id = :binary.part(msg, 0, 8)
-    map = msg |> unwrap(type)
-    container = Map.get map, :constructor
-    content = Map.get map, :message_content
-    message_id = Map.get map, :message_id
+    unwrapped = msg |> unwrap(type)
+    container = Map.get unwrapped, :constructor
+    content = Map.get unwrapped, :message_content
+    message_id = Map.get unwrapped, :message_id
+    msg_seqno = Map.get(unwrapped, :seq_no)
 
     #IO.inspect {container, content}, limit: :infinity
 
     {map, tail} = TL.parse(container, content)
-    {Map.put(map, :msg_id, message_id), tail}
+
+    map = map |> Map.put(:msg_id, message_id)
+              |> Map.put(:msg_seqno, msg_seqno)
+
+    {map, tail}
   end
 
   #  Wrap a message as a 'plain' payload.
@@ -74,6 +79,7 @@ defmodule MTProto.Payload do
 
     constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:int)
     message_content = :binary.part(message_data, 4, message_data_length - 4)
+
     %{
       salt: salt,
       session_id: session_id,
@@ -85,8 +91,19 @@ defmodule MTProto.Payload do
     }
   end
 
-  # Generate id for messages,  Unix time * 2^32
-  def generate_id(offset \\ 0) do
-    (:os.system_time(:seconds) + offset) * @pow_2_32 |> round
+  # Generate id for messages, ~ Unix time * 2^32, must be a multiple of 4
+  def generate_id() do
+    timestamp = (:os.system_time(:seconds) * @pow_2_32) |> round
+    rem = rem(timestamp, 4)
+    offset = if rem != 0, do: 4 - rem, else: rem
+
+    timestamp + offset
+  end
+
+  def fix_id(id) do
+    rem = rem(id, 4)
+    offset = if rem != 0, do: 4 - rem, else: rem
+
+    id + offset
   end
 end

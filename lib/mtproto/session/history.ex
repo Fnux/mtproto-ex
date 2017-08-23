@@ -69,11 +69,11 @@ defmodule MTProto.Session.History do
   end
 
   defp drop_older_than(session_id, limit) do
-    keys = Registry.get_keys table_for(session_id)
-    for msg_id <- keys do
-      if msg_id < limit do
-        drop session_id, msg_id
-      end
+    msg_id = table_for(session_id) |> Registry.last()
+
+    if msg_id < limit do
+      drop session_id, msg_id
+      drop_older_than(session_id, limit)
     end
   end
 end

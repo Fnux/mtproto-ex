@@ -1,4 +1,6 @@
 defmodule MTProto.Registry do
+  use GenServer
+
   @moduledoc false
 
   # Provide a registry to store connection-related informations such as
@@ -7,49 +9,95 @@ defmodule MTProto.Registry do
   # the generation of an authorization key.
 
   def start_link(name) do
-    Agent.start_link(fn -> Map.new end, name: name)
+    GenServer.start_link(__MODULE__, name, name: name)
   end
 
-  # Set a value given its keys.
-  def set(registry, id, key, value) do
-    Agent.update(registry, fn(map) ->
-      initial = Map.get(map, id)
-      updated = Map.put(initial, key, value)
-      Map.put map, id, updated
-    end)
+  def init(name) do
+    table = :ets.new(name, [:named_table, :set, :public, read_concurrency: true])
+    {:ok, table}
   end
 
-  def set(registry, key, struct) do
-    Agent.update(registry, fn(map) -> Map.put(map, key, struct) end)
+  ###
+
+  def handle_call({:set, key, value}, _from, table) do
+    reply = :ets.insert(table, {key, value})
+
+    {:reply, reply, table}
   end
 
+  def handle_call({:get, key}, _from, table) do
+    lookup = :ets.lookup(table, key)
 
-  # Delete a subtree given its key
-  def drop(registry, key) do
-    Agent.update(registry, fn(map) -> Map.delete(map, key) end)
+    reply = case lookup do
+      [{_key, value}] -> value
+      [] -> nil
+    end
+
+    {:reply, reply, table}
   end
 
-  # Delete a value given its keys.
-  def drop(registry, id, key) do
-    Agent.update(registry, fn(map) ->
-                 initial = Map.get(map, id)
-                 updated = Map.delete(initial, key)
-                 Map.put map, id, updated
-    end)
+  def handle_call({:drop, key}, _from, table) do
+    reply = :ets.delete(table, key)
+
+    {:reply, reply, table}
   end
 
-  # Get an element given its keys.
-  def get(registry, key) do
-    Agent.get(registry, fn(map) -> Map.get(map, key) end)
+  def handle_call(:dump, _from, table) do
+    reply = :ets.match(table, :"$1")
+    {:reply, reply, table}
   end
 
-  # Return the key of every element stored in the registry.
-  def get_keys(registry) do
-    Agent.get(registry, fn(map) -> Map.keys(map) end)
+  def handle_call(:first, _from, table) do
+    reply = :ets.first(table)
+    {:reply, reply, table}
   end
 
-  # Dump the whole registry (as a map).
-  def dump(registry) do
-    Agent.get(registry, fn(map) -> map end)
+  def handle_call(:last, _from, table) do
+    reply = :ets.last(table)
+    {:reply, reply, table}
+  end
+
+  def handle_call({:next, key}, _from, table) do
+    reply = :ets.next(table, key)
+    {:reply, reply, table}
+  end
+
+  def handle_call({:prev, key}, _from, table) do
+    reply = :ets.prev(table, key)
+    {:reply, reply, table}
+  end
+
+  ###
+
+  def set(name, key, value) do
+    GenServer.call name, {:set, key, value}
+  end
+
+  def get(name, key) do
+    GenServer.call name, {:get, key}
+  end
+
+  def drop(name, key) do
+    GenServer.call name, {:drop, key}
+  end
+
+  def dump(name) do
+    GenServer.call name, :dump
+  end
+
+  def first(name) do
+    GenServer.call name, :first
+  end
+
+  def last(name) do
+    GenServer.call name, :last
+  end
+
+  def next(name, key) do
+    GenServer.call name, {:next, key}
+  end
+
+  def prev(name, key) do
+    GenServer.call name, {:prec, key}
   end
 end

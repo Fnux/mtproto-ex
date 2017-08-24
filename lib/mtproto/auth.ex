@@ -95,6 +95,7 @@ defmodule MTProto.Auth do
     # The server salt is represented as 'long' in MTProto's Schema, hence must be stored as a 'long' in
     # order to avoid endianess mismatch
     server_salt = :erlang.bxor(salt_left, salt_right) |> TL.serialize(:long)
+                                                      |> Binary.reverse_endianness # workaround
 
     result = %{auth_key: auth_key, server_salt: server_salt}
 

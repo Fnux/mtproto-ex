@@ -1,4 +1,6 @@
 defmodule MTProto.Payload do
+  alias MTProto.Payload
+
   @moduledoc false
   @pow_2_32 :math.pow(2,32)
 
@@ -8,6 +10,13 @@ defmodule MTProto.Payload do
   #  encrypted or not. See [the detailed description of MTProto](https://core.telegram.org/mtproto/description)
   #  for more detailed informations.
 
+  defstruct constructor: nil,
+    content: nil,
+    session_id: nil,
+    type: nil,
+    msg_id: nil,
+    msg_seqno: nil,
+    salt: nil
 
   # TO BE REMOVED
   def build(method, args) do
@@ -17,19 +26,14 @@ defmodule MTProto.Payload do
   # Unwrap ('type' is either `:plain` or `:encrypted`) and parse a message.
   # Returns `{map, tail}`.
   def parse(msg, type \\ :encrypted) do
-    #auth_key_id = :binary.part(msg, 0, 8)
-    unwrapped = msg |> unwrap(type)
-    container = Map.get unwrapped, :constructor
-    content = Map.get unwrapped, :message_content
-    message_id = Map.get unwrapped, :message_id
-    msg_seqno = Map.get(unwrapped, :seq_no)
+    payload = unwrap msg, type
 
-    #IO.inspect {container, content}, limit: :infinity
+    #IO.inspect {payload.message_id, payload.content}, limit: :infinity
 
-    {map, tail} = TL.parse(container, content)
+    {map, tail} = TL.parse(payload.constructor, payload.content)
 
-    map = map |> Map.put(:msg_id, message_id)
-              |> Map.put(:msg_seqno, msg_seqno)
+    map = map |> Map.put(:msg_id, payload.msg_id)
+              |> Map.put(:msg_seqno, payload.msg_seqno)
 
     {map, tail}
   end
@@ -51,43 +55,36 @@ defmodule MTProto.Payload do
 
   #  Unwrap a 'plain' payload.
   def unwrap(msg, :plain) do
-    auth_key_id = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
-    message_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)
+    # auth_key_id = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
+
     message_data_length = :binary.part(msg, 16, 4) |> TL.deserialize(:int)
     message_data = :binary.part(msg, 20, message_data_length)
 
-    constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:int)
-    message_content = :binary.part(message_data, 4, message_data_length - 4)
-
-    %{
-      auth_key_id: auth_key_id,
-      message_id: message_id,
-      message_data_length: message_data_length,
-      constructor: constructor,
-      message_content: message_content
+    %Payload{
+      type: :plain,
+      msg_id: :binary.part(msg, 8, 8) |> TL.deserialize(:long),
+      constructor: :binary.part(message_data, 0, 4) |> TL.deserialize(:int),
+      content: :binary.part(message_data, 4, message_data_length - 4)
     }
   end
 
   # Unwrap an 'encrypted' payload.
   def unwrap(msg, :encrypted) do
-    salt = :binary.part(msg, 0, 8) |> TL.deserialize(:long)
-    session_id = :binary.part(msg, 8, 8) |> TL.deserialize(:long)
-    message_id = :binary.part(msg, 16, 8) |> TL.deserialize(:long)
-    seq_no =:binary.part(msg, 24, 4) |> TL.deserialize(:int)
     message_data_length =  :binary.part(msg, 28, 4) |> TL.deserialize(:int)
     message_data = :binary.part(msg, 32, message_data_length)
 
     constructor = :binary.part(message_data, 0, 4) |> TL.deserialize(:int)
     message_content = :binary.part(message_data, 4, message_data_length - 4)
 
-    %{
-      salt: salt,
-      session_id: session_id,
-      message_id: message_id,
-      seq_no: seq_no,
-      messsage_data_length: message_data_length,
+    %Payload{
+      type: :encrypted,
+      salt: :binary.part(msg, 0, 8) |> TL.deserialize(:long),
+      session_id: :binary.part(msg, 8, 8) |> TL.deserialize(:long),
+      msg_id: :binary.part(msg, 16, 8) |> TL.deserialize(:long),
+      # Message sequence number != Session sequence number
+      msg_seqno: :binary.part(msg, 24, 4) |> TL.deserialize(:int),
       constructor: constructor,
-      message_content: message_content
+      content: message_content
     }
   end
 

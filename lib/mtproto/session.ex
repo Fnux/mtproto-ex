@@ -42,16 +42,12 @@ defmodule MTProto.Session do
     dc: nil,
     initialized?: false,
     client: nil,
+    auth_client: nil,
     phone_code_hash: nil,
     last_msg_id: 0,
     seqno: 0,
     msg_seqno: 0,
-    socket: 0,
-    new_nonce: nil, # auth key computation
-    server_nonce: nil, # auth key computation
-    g_a: nil, # auth key computation
-    b: nil, # auth key computation
-    dh_prime: nil #auth key computation
+    socket: 0
 
   ####
   # Registry access

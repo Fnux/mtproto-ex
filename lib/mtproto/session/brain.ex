@@ -1,5 +1,5 @@
 defmodule MTProto.Session.Brain do
-  alias MTProto.{Auth, Session}
+  alias MTProto.{Session}
   alias MTProto.Session.{Handler, History}
   require Logger
 
@@ -8,17 +8,25 @@ defmodule MTProto.Session.Brain do
   # Process plain messages
   def process(msg, session_id, :plain) do
     name = Map.get(msg, :name)
+    session = Session.get(session_id)
+    auth_client = session.auth_client
 
-    case name do
-      "resPQ" -> Auth.resPQ(msg, session_id)
-      "server_DH_params_ok" -> Auth.server_DH_params_ok(msg, session_id)
-      "server_DH_params_fail" -> Auth.server_DH_params_fail(msg, session_id)
-      "dh_gen_ok" -> Auth.dh_gen_ok(msg, session_id)
-      "dh_gen_fail" -> Auth.dh_gen_fail(msg, session_id)
-      "dh_gen_retry" -> Auth.dh_gen_fail(msg, session_id)
-      "error" -> handle_error(session_id, msg)
-      _ ->
-        Logger.debug "[MT][Brain] Unknow predicate : #{name}"
+    if auth_client do
+      case name do
+        "resPQ" -> send auth_client, {:recv_resPQ, msg}
+        "server_DH_params_ok" -> send auth_client, {:recv_server_DH_params_ok, msg}
+        "server_DH_params_fail" -> send auth_client, {:recv_server_DH_params_ok, msg}
+        "dh_gen_ok" -> send auth_client, {:recv_dh_gen_ok, msg}
+        "dh_gen_fail" -> send auth_client, {:recv_dh_gen_fail, msg}
+        "dh_gen_retry" -> send auth_client, {:recv_dh_gen_retry, msg}
+        _ -> IO.inspect name
+      end
+    end
+
+    if name == "error" do
+      IO.inspect msg
+      error_code = Map.get(msg, :code)
+      Logger.warn "Received plain error : #{error_code}"
     end
   end
 
@@ -87,22 +95,6 @@ defmodule MTProto.Session.Brain do
 
   ## Error Handling
   ## See https://core.telegram.org/api/errors
-
-  # Handle errors for plain messages
-  defp handle_error(session_id, msg) do
-    error_code = Map.get(msg, :code)
-
-    case error_code do
-      -404 ->
-        session = Session.get(session_id)
-        if session.auth_key == <<0::8*8>> do
-          Logger.debug "[MT][Brain] I received a -404 error. I still don't have an auth key
-          for this DC (#{session.dc}) so I'm going to generate one ! I'm a workaround ;("
-          Auth.req_pq(session_id)
-        end
-        _ -> Logger.warn "[MT][Brain] Unknown error : #{error_code}"
-    end
-  end
 
   # Handle errors for encrypted messages
   defp handle_rpc_error(_session_id, rpc_result) do

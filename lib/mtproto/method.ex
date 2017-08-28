@@ -9,14 +9,13 @@ defmodule MTProto.Method do
   ###############
 
   # Build the payload for req_pq
-  def req_pq do
-    nonce = Crypto.rand_bytes(16)
+  def req_pq(nonce \\ nil) do
+    nonce = unless nonce, do: Crypto.rand_bytes(16), else: nonce
     Payload.build("req_pq", %{nonce: nonce})
   end
 
   # Build the payload for req_DH_params
   def req_DH_params(nonce, server_nonce, new_nonce, pq, key_fingerprint) do
-    <<pq::integer-size(8)-unit(8)>> = pq # from bits to integer
     p = Crypto.decompose_pq pq
     q = pq / p |> round
     f = key_fingerprint
@@ -41,7 +40,7 @@ defmodule MTProto.Method do
   end
 
   # Build & encrypt p_q_inner_data (will be included in req_DH_params' payload)
-  def p_q_inner_data(nonce, server_nonce, new_nonce, pq, p, q) do
+  defp p_q_inner_data(nonce, server_nonce, new_nonce, pq, p, q) do
     # Build and serialize
     data = TL.build("p_q_inner_data",
                         %{ pq: pq,
@@ -60,26 +59,6 @@ defmodule MTProto.Method do
     padding = 255 - byte_size(data)
     data_with_hash = <<data::binary, :crypto.strong_rand_bytes(padding)::binary>>
     {hash, data_with_hash}
-  end
-
-  # Decrypt and parse the server_DH_params_ok payload
-  def server_DH_inner_data(encrypted_answer, tmp_aes_key, tmp_aes_iv) do
-    # answer_with_hash := SHA1(answer) + answer + (0-15 random bytes); 
-    # such that the length be divisible by 16;
-    # Encrypted with AES_256_IGE;
-    answer_with_hash = :crypto.block_decrypt :aes_ige256, tmp_aes_key, tmp_aes_iv, encrypted_answer
-
-    # Extract answer
-    sha_length = 20
-    answer = :binary.part answer_with_hash, sha_length, byte_size(answer_with_hash) - sha_length
-
-    # Extract constructor & values from answer
-    #constructor = :binary.part(answer, 0, 4) |> Parse.deserialize(:int) # server_DH_params_ok#d0e8075c
-    container = -1249309254 #! hotfix, override ^
-    values = :binary.part(answer, 4, byte_size(answer) - 4) # remove constructor ^
-
-    # Parse & deserialize
-    TL.parse(container, values)
   end
 
   # Build set_client_DH_params payload

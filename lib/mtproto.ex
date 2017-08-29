@@ -45,24 +45,14 @@ defmodule MTProto do
     {:ok, session_id}
   end
 
-  def request_authkey(session_id, retries \\ 1)
-  def request_authkey(__session_id, 0), do: :timeout
   @doc """
   Launch the Authorization Key computation sequence.
   """
-  def request_authkey(session_id, retries) do
+  def request_authkey(session_id) do
     Logger.debug "Requesting authorization key for session #{session_id}..."
 
-    {:ok, pid} = MTProto.Session.Auth.start_link(self(), session_id)
-
-    receive do
-      :authkey_generated -> :ok
-    after
-      5_000 ->
-        if Process.alive?(pid), do: GenServer.stop(pid)
-        Logger.warn "AuthKey : Generation timeout... #{retries - 1} retries remaining."
-        request_authkey(session_id, retries - 1)
-    end
+    session = Session.get(session_id)
+    Kernel.send session.auth_client, :send_req_pq
   end
 
   @doc """

@@ -1,6 +1,6 @@
-defmodule MTProto.Session.Auth do
+defmodule MTProto.Session.Workers.AuthKeyHandler do
   alias MTProto.{Method, Crypto, Session}
-  alias MTProto.Session.Auth
+  alias MTProto.Session.Workers.AuthKeyHandler, as: Auth
   alias TL.Binary
   require Logger
   use GenServer
@@ -9,22 +9,22 @@ defmodule MTProto.Session.Auth do
   # @TODO checking that g_a and g_b are between 2^{2048-64} and
   # dh_prime - 2^{2048-64} as well.
 
-  defstruct [:caller, :session_id, :nonce, :new_nonce, :server_nonce, :pq,
+  defstruct [:session_id, :nonce, :new_nonce, :server_nonce, :pq,
              :key_fingerprint, :dh_prime, :g, :g_a, :g_b, :tmp_aes_key,
              :tmp_aes_iv]
 
-  def start_link(caller, session_id, opts \\ []) do
-     GenServer.start_link(__MODULE__, {caller, session_id}, [opts])
+  def start_link(session_id, opts \\ []) do
+     GenServer.start_link(__MODULE__, session_id, [opts])
   end
 
-  def init({caller, session_id}) do
+  def init(session_id) do
     # Register as temporary session auth_client
     Session.update(session_id, auth_client: self())
 
     # Start authorization key generation procedure
-    send self(), :send_req_pq
+    #send self(), :send_req_pq
 
-    state = %Auth{caller: caller, session_id: session_id}
+    state = %Auth{session_id: session_id}
     {:ok, state}
   end
 
@@ -160,7 +160,7 @@ defmodule MTProto.Session.Auth do
     end
   end
 
-  def handle_info({:recv_dh_gen_fail, msg}, state) do
+  def handle_info({:recv_dh_gen_fail, _msg}, state) do
     #new_nonce_hash3 = msg.new_nonce_hash3
 
     Logger.warn "AuthKey: set_client_DH_params fail! Retrying..."
@@ -169,7 +169,7 @@ defmodule MTProto.Session.Auth do
     {:noreply, state}
   end
 
-  def handle_info({:recv_dh_gen_retry, msg}, state) do
+  def handle_info({:recv_dh_gen_retry, _msg}, state) do
     #new_nonce_hash2 = msg.new_nonce_hash2
 
     Logger.warn "AuthKey: set_client_DH_params retry! Retrying..."
@@ -178,7 +178,9 @@ defmodule MTProto.Session.Auth do
     {:noreply, state}
   end
 
-  def handle_info({:recv_dh_gen_ok, msg}, state) do
+  def handle_info({:recv_dh_gen_ok, _msg}, state) do
+    # dh_gen_ok#3bcbf734 nonce:int128 server_nonce:int128 new_nonce_hash1:int128
+
     # AuthKey
     authorization_key = :crypto.mod_pow(state.g_a, state.g_b, state.dh_prime)
 
@@ -200,28 +202,24 @@ defmodule MTProto.Session.Auth do
       %{auth_key: authorization_key, server_salt: server_salt}
     )
 
-    # Notify the calling process that evrything's ok
-    send state.caller, :generated
-
-    # Gently exit
-    exit(:normal)
+    # Notify the client process that evrything's ok
+    session = Session.get(state.session_id)
+    if session.client do
+      send state.clientk, :auth_key_generated
+    else
+      IO.puts "No client for #{state.session_id}, printing to console."
+      IO.puts "> The Authorization Key has been generated."
+    end
 
     {:noreply, state}
   end
 
   # Catch-all used for development
-  def handle_info(msg, state) do
-    IO.inspect msg
-
-    {:noreply, state}
-  end
-
-  def terminate(_reason, state) do
-    # Revert client registration
-    Session.update(state.session_id, auth_client: nil)
-
-    :shutdown
-  end
+  #def handle_info(msg, state) do
+  #  IO.inspect msg
+  #
+  #  {:noreply, state}
+  #end
 
   ###
 

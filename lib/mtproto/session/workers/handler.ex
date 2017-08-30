@@ -72,7 +72,7 @@ defmodule MTProto.Session.Workers.Handler do
     #IO.puts "Sending with MSG_ID: #{msg_id} and SEQNO #{msg_seqno}"
     payload = Payload.wrap(payload, msg_id, msg_seqno)
 
-    if session.auth_key != <<0::8*8>> && session.auth_key != nil do
+    if session.auth_key != <<0::8*256>> do
       encrypted_msg = Crypto.encrypt_message(session.auth_key, session.server_salt, session_id, payload)
       encrypted_msg |> TCP.wrap(session.seqno) |> TCP.send(session.socket)
 

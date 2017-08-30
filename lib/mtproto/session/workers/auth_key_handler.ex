@@ -242,8 +242,7 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     )
 
     # Extract constructor & content from answer
-    #constructor = :binary.part(answer, 0, 4) |> Binary.decode_signed()
-    constructor = -1249309254 # workaround, @TODO
+    constructor = :binary.part(answer, 0, 4) |> TL.deserialize(:int)
     content = :binary.part(answer, 4, byte_size(answer) - 4)
 
     # Parse & deserialize

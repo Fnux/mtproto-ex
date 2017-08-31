@@ -106,6 +106,7 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     dh_prime = server_DH_params_ok.dh_prime
     g = server_DH_params_ok.g
     g_a = server_DH_params_ok.g_a
+    #server_time = server_DH_params_ok.server_time
 
     # Validations
     dh_prime_valid? = true # @TODO check if safe prime number
@@ -178,11 +179,17 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     {:noreply, state}
   end
 
-  def handle_info({:recv_dh_gen_ok, _msg}, state) do
+  def handle_info({:recv_dh_gen_ok, msg}, state) do
     # dh_gen_ok#3bcbf734 nonce:int128 server_nonce:int128 new_nonce_hash1:int128
+    new_nonce_hash1 = msg.new_nonce_hash1
 
     # AuthKey
     authorization_key = :crypto.mod_pow(state.g_a, state.g_b, state.dh_prime)
+
+    # Check new_nonce_hash
+    unless check_new_nonce_hash(new_nonce_hash1, 1, state.new_nonce, authorization_key) do
+      Logger.warn "AuthKey : new_nonce_hash1 does not match !"
+    end
 
     # Server salt
     # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
@@ -194,7 +201,7 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     # Store a 'serialized' server_salt in order to avoid endianness issues
     # later. Should be serialized as 'long' but it looks like we already have
     # the 'right' endianness ... ? ('long' is a little-endian 128 bits number)
-    server_salt = raw_server_salt |> TL.serialize(:int128)
+    server_salt = raw_server_salt |> TL.serialize(:int64)
 
     # Set values into the session's registry
     Session.update(
@@ -247,6 +254,17 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
 
     # Parse & deserialize
     TL.parse(constructor, content)
+  end
+
+  defp check_new_nonce_hash(new_nonce_hash, number, new_nonce, auth_key) do
+    auth_key_aux_hash = :crypto.hash(:sha, auth_key) |> :binary.part(0, 8)
+    full_hash = :crypto.hash(
+      :sha, Binary.encode_signed(new_nonce) <> <<number>> <> auth_key_aux_hash
+    )
+    expected_hash = :binary.part(full_hash, byte_size(full_hash) - 16, 16)
+
+    # Return true if they match
+    expected_hash == Binary.encode_signed(new_nonce_hash)
   end
 
   defp build_salt_part(x_nonce) do

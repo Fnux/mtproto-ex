@@ -108,11 +108,13 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     g_a = server_DH_params_ok.g_a
     #server_time = server_DH_params_ok.server_time
 
+    decoded_dh_prime = :binary.decode_unsigned(dh_prime)
+    decoded_g_a = :binary.decode_unsigned(g_a)
+
     # Validations
-    dh_prime_valid? = true # @TODO check if safe prime number
-    # @TODO check if g generates a cyclic subgroup of prime order (p-1)/2
-    g_valid? = (g in [2,3,4,5,6,7]) #&& (g > 1) && (g < dh_prime - 1)
-    g_a_valid? = (g_a > 1) #&& (g_a < dh_prime - 1)
+    dh_prime_valid? = validate(:dh_prime, decoded_dh_prime)
+    g_valid? =  validate(:g, g, decoded_dh_prime)
+    g_a_valid? = (decoded_g_a > 1) && (decoded_g_a < decoded_dh_prime - 1)
 
     if dh_prime_valid? && g_valid? && g_a_valid? do
       send self(), :send_set_client_DH_params
@@ -127,7 +129,8 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
       })
       {:noreply, state}
     else
-      Logger.warn "AuthKey: DH_params_ok validation failed! Retying..."
+      Logger.warn "AuthKey: DH_params_ok validation failed! Retrying..."
+      send self(), :send_req_pq
 
       state = purge(state)
       {:noreply, state}
@@ -136,7 +139,8 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
 
   def handle_info(:send_set_client_DH_params, state) do
     g_b = Crypto.rand_bytes(32)
-    g_b_valid? = (state.g_a > 1) #&& (state.g_a < state.dh_prime - 1)
+    g_b_valid? = (g_b > 1) &&
+      (g_b < :binary.decode_unsigned(state.dh_prime) - 1)
 
     if g_b_valid? do
       set_client_DH_params = Method.set_client_DH_params(
@@ -154,15 +158,25 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
       state = struct(state, g_b: g_b)
       {:noreply, state}
     else
-      Logger.warn "AuthKey: set_client_DH_params validation failed! Retying..."
+      Logger.warn "AuthKey: set_client_DH_params validation failed! Retrying..."
+      send self(), :send_req_pq
 
       state = purge(state)
       {:noreply, state}
     end
   end
 
-  def handle_info({:recv_dh_gen_fail, _msg}, state) do
-    #new_nonce_hash3 = msg.new_nonce_hash3
+  def handle_info({:recv_dh_gen_fail, msg}, state) do
+    new_nonce_hash3 = msg.new_nonce_hash3
+
+    # new_nonce_hash check
+    authorization_key = build_auth_key(state.g_a, state.g_b, state.dh_prime)
+    new_nonce_hash_valid? = validate(
+      :new_nonce_hash, new_nonce_hash3, 3, state.new_nonce, authorization_key
+    )
+    unless new_nonce_hash_valid? do
+      Logger.warn "AuthKey : new_nonce_hash3 does not match !"
+    end
 
     Logger.warn "AuthKey: set_client_DH_params fail! Retrying..."
     send self(), :send_set_client_DH_params
@@ -170,8 +184,17 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     {:noreply, state}
   end
 
-  def handle_info({:recv_dh_gen_retry, _msg}, state) do
-    #new_nonce_hash2 = msg.new_nonce_hash2
+  def handle_info({:recv_dh_gen_retry, msg}, state) do
+    new_nonce_hash2 = msg.new_nonce_hash2
+
+    # new_nonce_hash check
+    authorization_key = build_auth_key(state.g_a, state.g_b, state.dh_prime)
+    new_nonce_hash_valid? = validate(
+      :new_nonce_hash, new_nonce_hash2, 2, state.new_nonce, authorization_key
+    )
+    unless new_nonce_hash_valid? do
+      Logger.warn "AuthKey : new_nonce_hash2 does not match !"
+    end
 
     Logger.warn "AuthKey: set_client_DH_params retry! Retrying..."
     send self(), :send_set_client_DH_params
@@ -184,38 +207,43 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     new_nonce_hash1 = msg.new_nonce_hash1
 
     # AuthKey
-    authorization_key = :crypto.mod_pow(state.g_a, state.g_b, state.dh_prime)
+    authorization_key = build_auth_key(state.g_a, state.g_b, state.dh_prime)
 
     # Check new_nonce_hash
-    unless check_new_nonce_hash(new_nonce_hash1, 1, state.new_nonce, authorization_key) do
-      Logger.warn "AuthKey : new_nonce_hash1 does not match !"
-    end
-
-    # Server salt
-    # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
-    new_nonce_salt_part = build_salt_part(state.new_nonce)
-    server_nonce_salt_part = build_salt_part(state.server_nonce)
-
-    raw_server_salt = Bitwise.bxor(new_nonce_salt_part, server_nonce_salt_part)
-
-    # Store a 'serialized' server_salt in order to avoid endianness issues
-    # later. Should be serialized as 'long' but it looks like we already have
-    # the 'right' endianness ... ? ('long' is a little-endian 128 bits number)
-    server_salt = raw_server_salt |> TL.serialize(:int64)
-
-    # Set values into the session's registry
-    Session.update(
-      state.session_id,
-      %{auth_key: authorization_key, server_salt: server_salt}
+    new_nonce_hash_valid? = validate(
+      :new_nonce_hash, new_nonce_hash1, 1, state.new_nonce, authorization_key
     )
 
-    # Notify the client process that evrything's ok
-    session = Session.get(state.session_id)
-    if session.client do
-      send state.clientk, :auth_key_generated
+    if new_nonce_hash_valid? do
+      # Server salt
+      # substr(new_nonce, 0, 8) XOR substr(server_nonce, 0, 8)
+      new_nonce_salt_part = build_salt_part(state.new_nonce)
+      server_nonce_salt_part = build_salt_part(state.server_nonce)
+
+      raw_server_salt = Bitwise.bxor(new_nonce_salt_part, server_nonce_salt_part)
+
+      # Store a 'serialized' server_salt in order to avoid endianness issues
+      # later. Should be serialized as 'long' but it looks like we already have
+      # the 'right' endianness ... ? ('long' is a little-endian 128 bits number)
+      server_salt = raw_server_salt |> TL.serialize(:int64)
+
+      # Set values into the session's registry
+      Session.update(
+        state.session_id,
+        %{auth_key: authorization_key, server_salt: server_salt}
+      )
+
+      # Notify the client process that evrything's ok
+      session = Session.get(state.session_id)
+      if session.client do
+        send state.clientk, :auth_key_generated
+      else
+        IO.puts "No client for #{state.session_id}, printing to console."
+        IO.puts "> The Authorization Key has been generated."
+      end
     else
-      IO.puts "No client for #{state.session_id}, printing to console."
-      IO.puts "> The Authorization Key has been generated."
+      Logger.warn "AuthKey : new_nonce_hash1 does not match !"
+      Logger.error "Abording authorization key genration sequence !"
     end
 
     {:noreply, state}
@@ -232,6 +260,48 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
 
   defp purge(%Auth{}=state) do
     %Auth{session_id: state.session_id}
+  end
+
+  # Check that dh_prime is a safe prime number
+  def validate(:dh_prime, dh_prime) do
+    # @TODO: check that p=dh_prime is prime
+    p_prime? = true
+    # @TODO: check that q=(dh_prime - 1) / 2 is prime
+    q_prime? = true
+
+    upper_bound = Bitwise.<<<(2,2048)
+    lower_bound = Bitwise.<<<(2,2046) # should be 2^2047 @TODO
+
+    (dh_prime < upper_bound) && (dh_prime > lower_bound)
+                             && (p_prime?)
+                             && (q_prime?)
+  end
+
+  def validate(:g, g, dh_prime) do
+    value_valid? = g in [2,3,4,5,6,7]
+    bounds_valid? = (g > 1) && (g < dh_prime - 1)
+    cyclic_subgroup_valid? = case g do
+      2 -> rem(dh_prime, 8) == 2
+      3 -> rem(dh_prime, 3) == 2
+      4 -> true
+      5 -> rem(dh_prime, 5) in [1,4]
+      6 -> rem(dh_prime, 24) in [19,23]
+      7 -> rem(dh_prime, 7) in [3,5,6]
+      _ -> false
+    end
+
+    value_valid? && bounds_valid? && cyclic_subgroup_valid?
+  end
+
+  def validate(:new_nonce_hash, new_nonce_hash, number, new_nonce, auth_key) do
+    auth_key_aux_hash = :crypto.hash(:sha, auth_key) |> :binary.part(0, 8)
+    full_hash = :crypto.hash(
+      :sha, Binary.encode_signed(new_nonce) <> <<number>> <> auth_key_aux_hash
+    )
+    expected_hash = :binary.part(full_hash, byte_size(full_hash) - 16, 16)
+
+    # Return true if they match
+    expected_hash == Binary.encode_signed(new_nonce_hash)
   end
 
   defp server_DH_inner_data(encrypted_answer, tmp_aes_key, tmp_aes_iv) do
@@ -256,15 +326,8 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
     TL.parse(constructor, content)
   end
 
-  defp check_new_nonce_hash(new_nonce_hash, number, new_nonce, auth_key) do
-    auth_key_aux_hash = :crypto.hash(:sha, auth_key) |> :binary.part(0, 8)
-    full_hash = :crypto.hash(
-      :sha, Binary.encode_signed(new_nonce) <> <<number>> <> auth_key_aux_hash
-    )
-    expected_hash = :binary.part(full_hash, byte_size(full_hash) - 16, 16)
-
-    # Return true if they match
-    expected_hash == Binary.encode_signed(new_nonce_hash)
+  defp build_auth_key(g_a, g_b, dh_prime) do
+    :crypto.mod_pow(g_a, g_b, dh_prime)
   end
 
   defp build_salt_part(x_nonce) do

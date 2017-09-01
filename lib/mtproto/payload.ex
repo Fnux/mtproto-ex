@@ -28,7 +28,7 @@ defmodule MTProto.Payload do
   def parse(msg, type \\ :encrypted) do
     payload = unwrap msg, type
 
-    #IO.inspect {payload.message_id, payload.content}, limit: :infinity
+    #IO.inspect {payload.msg_id, payload.content}, limit: :infinity
 
     {map, tail} = TL.parse(payload.constructor, payload.content)
 

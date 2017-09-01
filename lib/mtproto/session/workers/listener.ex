@@ -1,4 +1,4 @@
-defmodule MTProto.Session.Listener do
+defmodule MTProto.Session.Workers.Listener do
   alias MTProto.{TCP, Session, DC}
   require Logger
   use GenServer
@@ -23,9 +23,9 @@ defmodule MTProto.Session.Listener do
     Session.set session_id, struct(session, map)
 
     # Ping telegram servers using existing authorization key
-    if session.auth_key do
-      Session.send session_id, MTProto.Method.ping()
-    end
+    #if session.auth_key do
+    #  Session.send session_id, MTProto.Method.ping()
+    #end
 
     # Start the listening loop
     send self(), :listen

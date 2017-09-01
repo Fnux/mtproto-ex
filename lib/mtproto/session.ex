@@ -1,7 +1,7 @@
 defmodule MTProto.Session do
   require Logger
   alias MTProto.{Crypto, Registry, Session}
-  alias MTProto.Session.{HandlerSupervisor, ListenerSupervisor, History}
+  alias MTProto.Session.Workers.{History}
 
   @table SessionRegistry
   @retry_max Application.get_env :telegram_mt, :msg_max_retry_count
@@ -42,16 +42,12 @@ defmodule MTProto.Session do
     dc: nil,
     initialized?: false,
     client: nil,
+    auth_client: nil,
     phone_code_hash: nil,
     last_msg_id: 0,
     seqno: 0,
     msg_seqno: 0,
-    socket: 0,
-    new_nonce: nil, # auth key computation
-    server_nonce: nil, # auth key computation
-    g_a: nil, # auth key computation
-    b: nil, # auth key computation
-    dh_prime: nil #auth key computation
+    socket: 0
 
   ####
   # Registry access
@@ -81,30 +77,26 @@ defmodule MTProto.Session do
     session_id = Crypto.rand_bytes(8)
     Session.set session_id, struct(Session, dc: dc_id, client: client)
 
-    {:ok, _} = History.pop(session_id)
-    {:ok, _} = HandlerSupervisor.pop(session_id, dc_id)
-    {:ok, _} = ListenerSupervisor.pop(session_id)
+    {:ok, _pid} = Session.Supervisor.create(session_id)
     session_id
   end
 
-  @doc """
-  Close the current connection to Telegram's server and open a new one.
-  Sessions (`user_id`, `authkey`, `server_salt`) are conserved.
-  """
-  def reconnect(session_id) do
-    # Close old listener (=> socket) and open a new one
-    :ok = ListenerSupervisor.drop(session_id)
-    {:ok, _} = ListenerSupervisor.pop(session_id)
-  end
+#  @doc """
+#  Close the current connection to Telegram's server and open a new one.
+#  Sessions (`user_id`, `authkey`, `server_salt`) are conserved.
+#  """
+#  def reconnect(session_id) do
+#    # Close old listener (=> socket) and open a new one
+#    :ok = ListenerSupervisor.drop(session_id)
+#    {:ok, _} = ListenerSupervisor.pop(session_id)
+#  end
 
   @doc """
   Close a session given its id. Stop both listener and handler, remove the
   session from the registry.
   """
   def close(session_id) do
-    :ok = History.drop(session_id)
-    :ok = ListenerSupervisor.drop(session_id)
-    :ok = HandlerSupervisor.drop(session_id)
+    Session.Supervisor.destroy(session_id)
     Session.drop(session_id)
   end
 

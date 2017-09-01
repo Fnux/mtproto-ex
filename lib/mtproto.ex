@@ -1,5 +1,5 @@
 defmodule MTProto do
-  alias MTProto.{DC, Session, API, Auth}
+  alias MTProto.{DC, Session, API}
   require Logger
 
   @moduledoc """
@@ -50,7 +50,9 @@ defmodule MTProto do
   """
   def request_authkey(session_id) do
     Logger.debug "Requesting authorization key for session #{session_id}..."
-    Auth.generate(session_id)
+
+    session = Session.get(session_id)
+    Kernel.send session.auth_client, :send_req_pq
   end
 
   @doc """

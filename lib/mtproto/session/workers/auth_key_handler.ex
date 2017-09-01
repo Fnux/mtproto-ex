@@ -6,8 +6,11 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
   use GenServer
   use Bitwise
 
-  # @TODO checking that g_a and g_b are between 2^{2048-64} and
-  # dh_prime - 2^{2048-64} as well.
+  # @TODO checking that dh_prime is a safe prime number
+  #
+  # @TODO limit to a maximum number of retries (in order to avoid infinite loops)
+  #
+  # @TODO fix issue #1 on github (-404s errors after req_DH_params)
 
   defstruct [:session_id, :nonce, :new_nonce, :server_nonce, :pq,
              :key_fingerprint, :dh_prime, :g, :g_a, :g_b, :tmp_aes_key,

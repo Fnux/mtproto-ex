@@ -239,7 +239,7 @@ defmodule MTProto.Session.Workers.AuthKeyHandler do
       # Notify the client process that evrything's ok
       session = Session.get(state.session_id)
       if session.client do
-        send state.clientk, :auth_key_generated
+        send state.client, :auth_key_generated
       else
         IO.puts "No client for #{state.session_id}, printing to console."
         IO.puts "> The Authorization Key has been generated."

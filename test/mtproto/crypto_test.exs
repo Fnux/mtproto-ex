@@ -1,8 +1,8 @@
-defmodule CryptoTest do
+defmodule MTProtoTest.Crypto do
   use ExUnit.Case
   doctest MTProto
 
-  @data "test/makeauthkey_test.json"
+  @data "test/data.json"
 
   setup_all do
     {:ok, json} = File.read @data
@@ -10,7 +10,9 @@ defmodule CryptoTest do
     data
   end
 
-  test "build_tmp_aes", data do
+  test "PQ decomposition"
+
+  test "AES keys generation", data do
     # Given
     server_nonce = data["server_nonce"] |> hexStr2Int
     new_nonce = data["new_nonce"] |> hexStr2Int

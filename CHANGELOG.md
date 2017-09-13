@@ -1,6 +1,6 @@
 # Changelog for telegram_mt (telegram-mt-elixir)
 
-## v0.1.1-alpha (2017-09-13
+## v0.1.1-alpha (2017-09-13)
 
 * Use ETS for registries
 * Fix initial 'bad_server_salt' error

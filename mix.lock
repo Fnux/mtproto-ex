@@ -2,4 +2,4 @@
   "ex_doc": {:hex, :ex_doc, "0.16.4", "4bf6b82d4f0a643b500366ed7134896e8cccdbab4d1a7a35524951b25b1ec9f0", [:mix], [{:earmark, "~> 1.1", [hex: :earmark, repo: "hexpm", optional: false]}], "hexpm"},
   "json": {:hex, :json, "1.0.2", "fa75ed4f355cd4ab468c25588171f8002a7274d3d5fb376c18822ddfc7c33f1f", [:mix], [], "hexpm"},
   "poison": {:hex, :poison, "3.1.0", "d9eb636610e096f86f25d9a46f35a9facac35609a7591b3be3326e99a0484665", [:mix], [], "hexpm"},
-  "telegram_tl": {:git, "https://github.com/fnux/telegram-tl-elixir.git", "2a22570ebe09f011e5f36e0132dee42fd570328d", []}}
+  "telegram_tl": {:hex, :telegram_tl, "0.2.1", "39f69dee0366831b02258efe287a020553370cb19307d459c7c7f848abbed8e0", [:mix], [{:poison, "~> 3.1", [hex: :poison, repo: "hexpm", optional: false]}], "hexpm"}}

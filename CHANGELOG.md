@@ -1,8 +1,19 @@
 # Changelog for telegram_mt (telegram-mt-elixir)
 
+## v0.1.1-alpha (2017-09-13
+
+* Use ETS for registries
+* Fix initial 'bad_server_salt' error
+* Reduce the number of 'bad_msg_notification' errors
+* Update telegram_tl dependency
+* Restructure of sessions' supervision tree
+* Major refactoring of the code related to the generation of the authorization
+  key
+
 ## v0.1.0-alpha (2017-08-12)
 
-* Switching from API layer 23 to API layer 57 (allows to access supergroup and a bunch of others 'recent' telegram features)
+* Switching from API layer 23 to API layer 57 (allows to access supergroup and
+  a bunch of others 'recent' telegram features)
 * Update telegram_tl dependency to v0.2.0-beta
 * Resend message in case of `bad_server_salt` or `bad_msg_notification` errors
 * History of recently sent messages

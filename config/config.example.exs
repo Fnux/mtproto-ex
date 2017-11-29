@@ -9,8 +9,8 @@ use Mix.Config
 # 3rd-party users, it should be done in your "mix.exs" file.
 
 config :telegram_mt,
-  api_id: "00000",
-  api_hash: "00000",
+  api_id: 00000,         # must be an integer!
+  api_hash: "00000abcd", # must be a string!
   msg_max_retry_count: 2
 
 # It is also possible to import configuration files, relative to this

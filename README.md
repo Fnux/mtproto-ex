@@ -1,3 +1,11 @@
+# This project is being abandonned in favor of bindings with telegram's tdlib
+
+**Telegram released a C++ library with a JSON interface. Since MTProto is a
+pain to implement, I drop this project (= native implementation in elixir) in
+favor of [elixir-tdlib](https://gitlab.com/Fnux/elixir-tdlib).**
+
+----
+
 # Telegram MT(Proto)
 
 [MTProto](https://core.telegram.org/mtproto) implementation in elixir.
